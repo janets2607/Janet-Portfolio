@@ -1,0 +1,3771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Janet — Product Designer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DynaPuff:wght@600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root{
+  --parchment:#efe3c8;
+  --ink:#f6eeda;
+  --amber:#f0a94e;
+  --amber-soft:#ffcf8d;
+  --blossom:#e9a9c0;
+
+  --serif:"Cormorant Garamond", Cormorant, Garamond, "Times New Roman", serif;
+  /* the typeface HydraBloom itself is set in */
+  --brand:"DynaPuff", "Trebuchet MS", "Segoe UI", sans-serif;
+  --sans:"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+
+  --top-gap: clamp(58px, 9.5vh, 108px);
+  /* iPhone 16/17 Pro: 402 x 874pt. Every phone and screen frame is cut to it.
+     Corner radius is ~55pt, which is 13.7% of the width and 6.3% of the
+     height — quoted as two values so the corner stays circular, not oval. */
+  --ios: 402 / 874;
+  --ios-r: 13.7% / 6.3%;
+  --ease: cubic-bezier(.22,.61,.36,1);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:#080503; color:var(--ink);
+  font-family:var(--sans); overflow:hidden; overscroll-behavior:none;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--amber-soft); outline-offset:3px; border-radius:2px}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+.nav{
+  position:fixed; top:0; left:0; right:0; z-index:80;
+  height:var(--top-gap);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 clamp(18px,4vw,52px);
+  pointer-events:none; transition:opacity .4s var(--ease);
+}
+.nav > *{pointer-events:auto}
+/* --- profile avatar (doubles as "return to the start of the shelf") --- */
+.brand{
+  position:relative; flex:0 0 auto; padding:0; overflow:hidden;
+  width:clamp(40px, 4.4vh, 52px); height:clamp(40px, 4.4vh, 52px);
+  border-radius:50%;
+  background-color:#211609;
+  background-size:cover; background-position:center; background-repeat:no-repeat;
+  box-shadow:
+    0 0 0 1px rgba(198,150,90,.5),
+    0 0 0 4px rgba(10,7,4,.55),
+    0 6px 20px rgba(0,0,0,.8),
+    inset 0 1px 0 rgba(255,224,176,.16);
+  transition:box-shadow .4s var(--ease), transform .4s var(--ease);
+}
+.brand:hover, .brand:focus-visible{
+  transform:translateY(-1px);
+  box-shadow:
+    0 0 0 1px rgba(255,207,141,.85),
+    0 0 0 4px rgba(10,7,4,.55),
+    0 8px 24px rgba(0,0,0,.85),
+    inset 0 1px 0 rgba(255,224,176,.22);
+}
+/* placeholder silhouette, hidden as soon as a photo is supplied */
+.avatar-ph{position:absolute; inset:0}
+.avatar-ph::before{
+  content:""; position:absolute; left:50%; top:23%;
+  width:32%; height:32%; margin-left:-16%; border-radius:50%;
+  background:rgba(239,227,200,.42);
+}
+.avatar-ph::after{
+  content:""; position:absolute; left:50%; bottom:-14%;
+  width:64%; height:46%; margin-left:-32%; border-radius:50% 50% 0 0;
+  background:rgba(239,227,200,.42);
+}
+.brand.has-photo .avatar-ph{display:none}
+.brand-wrap{position:relative; flex:0 0 auto}
+/* the avatar breathes until someone opens it, then settles for good.
+   Sits on the wrapper so the rings can spread past the clipped circle. */
+.brand-wrap::before{
+  content:""; position:absolute; inset:0; border-radius:50%; pointer-events:none;
+  animation:avatarPulse 2.9s ease-out infinite;
+}
+@keyframes avatarPulse{
+  0%  {box-shadow:0 0 0 0   rgba(255,207,141,.5),  0 0 16px 1px rgba(255,190,110,.34)}
+  65% {box-shadow:0 0 0 13px rgba(255,207,141,0),  0 0 26px 5px rgba(255,190,110,.14)}
+  100%{box-shadow:0 0 0 0   rgba(255,207,141,0),  0 0 16px 1px rgba(255,190,110,0)}
+}
+.brand-wrap.met::before{animation:none; box-shadow:none}
+
+/* --- a word from the person whose shelf this is --- */
+.brand-bubble{
+  position:absolute; top:calc(100% + 14px); left:0; z-index:90;
+  width:min(304px, calc(100vw - 40px));
+  padding:18px 20px 16px; border-radius:14px;
+  background:rgba(18,12,7,.94);
+  -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px);
+  border:1px solid rgba(198,150,90,.3);
+  box-shadow:0 20px 48px rgba(0,0,0,.78), inset 0 1px 0 rgba(255,224,176,.12);
+  opacity:0; transform:translateY(-8px) scale(.97); transform-origin:top left;
+  pointer-events:none;
+  transition:opacity .28s var(--ease), transform .28s var(--ease);
+}
+.brand-bubble.open{opacity:1; transform:none; pointer-events:auto}
+.brand-bubble[hidden]{display:none}
+/* the tail, pointing back up at the avatar */
+.brand-bubble::before{
+  content:""; position:absolute; top:-7px; left:16px; width:13px; height:13px;
+  background:rgba(18,12,7,.94);
+  border-left:1px solid rgba(198,150,90,.3);
+  border-top:1px solid rgba(198,150,90,.3);
+  transform:rotate(45deg);
+}
+.brand-bubble .sig{display:block; margin-bottom:11px}
+.brand-bubble p{margin:0; font-size:13.5px; line-height:1.75; color:rgba(239,227,200,.8)}
+.brand-bubble p em{font-style:italic; color:var(--amber-soft)}
+.brand-bubble .sig{
+  font-size:10px; letter-spacing:.24em; text-transform:uppercase;
+  font-family:var(--sans); color:rgba(239,227,200,.5);
+}
+
+.nav-links{display:flex; gap:clamp(16px,2.6vw,34px)}
+.nav-link{
+  font-size:11.5px; font-weight:500; letter-spacing:.22em; text-transform:uppercase;
+  /* same ink as the lede beneath the hero heading */
+  color:rgba(241,231,208,.8); padding:6px 2px; position:relative;
+  text-shadow:0 1px 2px rgba(0,0,0,.95), 0 3px 16px rgba(0,0,0,.9);
+  transition:color .35s var(--ease);
+}
+.nav-link::after{
+  content:""; position:absolute; left:0; right:0; bottom:0; height:1px;
+  background:var(--amber-soft); transform:scaleX(0); transform-origin:left;
+  transition:transform .45s var(--ease);
+}
+.nav-link:hover, .nav-link[aria-current="true"], .nav-link[aria-expanded="true"]{color:rgba(241,231,208,1)}
+.nav-link:hover::after, .nav-link[aria-current="true"]::after,
+.nav-link[aria-expanded="true"]::after{transform:scaleX(1)}
+
+.nav-item{position:relative}
+.caret{
+  display:inline-block; width:5px; height:5px; margin-left:7px;
+  border-right:1px solid currentColor; border-bottom:1px solid currentColor;
+  transform:translateY(-2px) rotate(45deg);
+  transition:transform .35s var(--ease);
+}
+.nav-link[aria-expanded="true"] .caret{transform:translateY(0) rotate(225deg)}
+
+/* --- project jump menu --- */
+.menu{
+  position:absolute; top:calc(100% + 14px); right:0; z-index:90;
+  width:300px; padding:8px; border-radius:4px;
+  background:linear-gradient(to bottom, rgba(20,14,9,.97), rgba(11,7,4,.98));
+  border:1px solid rgba(180,138,88,.34);
+  box-shadow:0 22px 54px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,220,170,.14);
+  transform-origin:top right;
+  animation:menuIn .3s var(--ease);
+}
+.menu[hidden]{display:none}
+@keyframes menuIn{from{opacity:0; transform:translateY(-6px) scale(.98)}to{opacity:1; transform:none}}
+.menu-head{
+  padding:8px 10px 10px; font-size:9px; letter-spacing:.28em; text-transform:uppercase;
+  color:rgba(236,220,186,.42);
+}
+.menu-item{
+  display:block; width:100%;
+  padding:11px 12px; border-radius:3px; text-align:left;
+  transition:background .25s var(--ease);
+}
+.menu-item:hover, .menu-item:focus-visible{background:rgba(255,206,145,.09)}
+.menu-item[aria-current="true"]{background:rgba(255,206,145,.06)}
+.menu-text{min-width:0}
+.menu-name{
+  display:block; font-family:var(--serif); font-size:16px; letter-spacing:.14em;
+  text-transform:uppercase; color:#f7ecd8;
+}
+.menu-sub{
+  display:block; margin-top:3px; font-size:11px; line-height:1.4;
+  color:rgba(236,220,186,.58);
+}
+
+/* --- labelled markers on the position rail --- */
+.rail-mark .lbl{
+  position:absolute; bottom:19px; left:50%; transform:translateX(-50%) translateY(4px);
+  padding:4px 9px; border-radius:3px; white-space:nowrap;
+  background:rgba(16,11,7,.94); border:1px solid rgba(180,138,88,.3);
+  font-size:9px; letter-spacing:.16em; text-transform:uppercase;
+  color:rgba(244,234,214,.9); pointer-events:none;
+  opacity:0; transition:opacity .25s var(--ease), transform .25s var(--ease);
+}
+.rail-mark:hover .lbl, .rail-mark:focus-visible .lbl{opacity:1; transform:translateX(-50%) translateY(0)}
+.rail-mark.project::after{background:var(--amber-soft); width:5px; height:5px; left:4px; top:4px}
+
+/* ============================================================
+   STAGE
+   ============================================================ */
+#stage{
+  position:fixed; inset:0; overflow:hidden; cursor:grab; touch-action:pan-y;
+  background:radial-gradient(120% 90% at 50% 34%, #221609 0%, #0b0603 74%);
+}
+#stage.dragging{cursor:grabbing}
+.layer{position:absolute; top:0; left:0; height:100%; will-change:transform}
+
+#wall{
+  width:600vw;
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,.6), rgba(0,0,0,.12) 42%, rgba(0,0,0,.82)),
+    repeating-linear-gradient(90deg, #241a12 0 89px, #1e1610 89px 181px);
+  filter:brightness(.6);
+}
+#fore{width:600vw; pointer-events:none; z-index:40}
+
+/* dissolves the top of the case into the dark and gives the nav its ground */
+#topFade{
+  position:fixed; top:0; left:0; right:0; z-index:70; pointer-events:none;
+  height:calc(var(--top-gap) * 1.9);
+  background:linear-gradient(to bottom,
+    #060402 0%, rgba(6,4,2,.97) 26%, rgba(6,4,2,.86) 46%,
+    rgba(6,4,2,.5) 70%, rgba(6,4,2,0) 100%);
+}
+.fore-book{
+  position:absolute; bottom:0; width:74px; height:82%;
+  background:linear-gradient(90deg, rgba(10,6,3,.06), rgba(26,16,9,.9) 42%, rgba(8,4,2,.94));
+  filter:blur(11px); opacity:.42; border-radius:3px;
+  transform:translateZ(0); backface-visibility:hidden;
+}
+
+/* ============================================================
+   CASE + WOOD
+   ============================================================ */
+.case{
+  position:relative; display:flex; flex-direction:column;
+  height:100vh; height:100dvh; width:max-content;
+  background:linear-gradient(to bottom, #100a05, #1a1008 30%, #0c0704);
+}
+
+/* --- shelf boards: grain, plank variation, front bevel --- */
+.board{
+  position:relative; height:2.4vh; min-height:15px; z-index:7;
+  background:
+    /* lit front bevel */
+    linear-gradient(to bottom, rgba(255,226,180,.85) 0 1px, rgba(255,206,148,.28) 1px 3px, transparent 3px),
+    /* fine grain */
+    repeating-linear-gradient(90deg, rgba(0,0,0,.2) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(90deg, rgba(255,212,158,.11) 0 1px, transparent 1px 17px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.15) 0 2px, transparent 2px 43px),
+    repeating-linear-gradient(90deg, rgba(255,200,144,.07) 0 3px, transparent 3px 97px),
+    /* board-to-board tone variation, long period so tiling never reads */
+    repeating-linear-gradient(90deg, rgba(0,0,0,.19) 0 190px, rgba(255,194,134,.09) 190px 361px, rgba(0,0,0,.09) 361px 613px),
+    linear-gradient(to bottom, #b47c42 0%, #8a5a2d 16%, #5c3a1b 50%, #2a190b 84%, #100904 100%);
+  box-shadow:0 14px 34px rgba(0,0,0,.88), 0 3px 0 rgba(0,0,0,.62);
+}
+.board.thick{height:3.1vh; min-height:19px}
+.knot{
+  position:absolute; border-radius:50%; pointer-events:none;
+  background:radial-gradient(ellipse at 50% 50%, rgba(46,26,10,.85) 0 22%, rgba(96,62,30,.5) 44%, rgba(120,80,42,0) 74%);
+}
+
+/* --- shelf cavity: vertical beadboard back panel --- */
+.row{position:relative; overflow:hidden}
+.row-inner{display:flex; align-items:flex-end; height:100%; padding:0 46px}
+.row::before{
+  content:""; position:absolute; inset:0;
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,.72), rgba(0,0,0,.1) 46%, rgba(0,0,0,.86)),
+    repeating-linear-gradient(90deg,
+      rgba(0,0,0,.52) 0 2px, rgba(255,196,136,.11) 2px 4px, transparent 4px 79px),
+    repeating-linear-gradient(90deg,
+      rgba(0,0,0,.36) 0 2px, transparent 2px 127px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.14) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(90deg, #4a3015 0 61px, #35200c 61px 124px);
+  box-shadow:inset 0 20px 34px rgba(0,0,0,.85), inset 0 -14px 26px rgba(0,0,0,.8);
+}
+/* warm wash from the lights strung under each board */
+.row::after{
+  content:""; position:absolute; inset:0; z-index:6; pointer-events:none;
+  background:linear-gradient(to bottom, rgba(255,180,94,.3), rgba(255,158,70,.08) 46%, rgba(255,150,60,0) 80%);
+  mix-blend-mode:screen;
+}
+/* These rows carry a filter across the full length of the shelf. Promoting
+   them means the blur is rasterised once instead of being recomputed tile by
+   tile as new shelf scrolls into view — which is what caused the stutter. */
+.row.deco{
+  filter:brightness(.42) contrast(.9) blur(1.6px);
+  transform:translateZ(0); will-change:transform; backface-visibility:hidden;
+}
+/* the outer shelves have no board on their far side — they simply run off the
+   top and bottom of the frame and fade, so only the middle shelf is bounded */
+.row.upper{flex:1; min-height:110px}
+.row.main{height:44vh; min-height:250px; z-index:5}
+.row.lower{flex:1; min-height:110px}
+
+/* --- vertical uprights dividing the run into bays --- */
+.upright{
+  position:absolute; top:0; bottom:0; width:20px; z-index:12; pointer-events:none;
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(0deg, rgba(255,210,156,.09) 0 2px, transparent 2px 31px),
+    linear-gradient(90deg, #120a04 0%, #7a5029 24%, #9a6636 42%, #40280f 78%, #0f0804 100%);
+  box-shadow:-12px 0 24px rgba(0,0,0,.75), 12px 0 24px rgba(0,0,0,.75);
+}
+
+/* ============================================================
+   FAIRY LIGHTS
+   ============================================================ */
+.lights{position:absolute; top:0; left:0; height:56px; z-index:9; pointer-events:none}
+.lights svg{position:absolute; top:0; left:0; overflow:visible}
+.bulb{
+  position:absolute; width:4px; height:4px; margin:-2px 0 0 -2px; border-radius:50%;
+  background:radial-gradient(circle at 40% 35%, #fff6de, #ffb254);
+  box-shadow:0 0 5px 2px rgba(255,180,90,.72);
+}
+.bulb.big{
+  box-shadow:0 0 7px 2px rgba(255,182,94,.85), 0 0 18px 6px rgba(255,158,66,.28);
+  animation:tw 5s ease-in-out infinite;
+}
+@keyframes tw{0%,100%{opacity:.7}50%{opacity:1}}
+
+/* ============================================================
+   BOOKS
+   ============================================================ */
+.book{
+  position:relative; flex:0 0 auto; align-self:flex-end;
+  border-radius:2px 2px 1px 1px; overflow:hidden;
+  background:linear-gradient(90deg,
+    #000 0%, var(--d) 4%, var(--c) 14%, var(--l) 29%, var(--c) 54%,
+    var(--d) 80%, rgba(0,0,0,.86) 96%, #000 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.42),
+    inset -3px 0 7px rgba(0,0,0,.6),
+    inset 3px 0 6px rgba(0,0,0,.45),
+    3px 0 10px rgba(0,0,0,.7);
+  transition:filter .5s var(--ease);
+}
+/* specular strip where the shelf light catches the round of the spine */
+.book::after{
+  content:""; position:absolute; top:0; bottom:0; left:22%; width:9%;
+  background:linear-gradient(90deg, rgba(255,236,206,0), rgba(255,236,206,.14), rgba(255,236,206,0));
+  pointer-events:none;
+}
+/* material texture — pebbled leather, woven cloth, striated paper.
+   .soft halves it; books with no .grain at all read as smooth boards. */
+.book .grain{position:absolute; inset:0; pointer-events:none}
+.book .grain.soft{opacity:.4}
+.book.m-leather .grain{
+  background:
+    repeating-radial-gradient(circle at 0 0, rgba(0,0,0,.16) 0 1px, rgba(255,255,255,.04) 1px 2px, transparent 2px 5px),
+    repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(66deg, rgba(255,255,255,.09) 0 1px, transparent 1px 4px),
+    radial-gradient(ellipse at 26% 14%, rgba(255,242,222,.16), transparent 44%),
+    radial-gradient(ellipse at 72% 80%, rgba(0,0,0,.34), transparent 54%);
+}
+.book.m-cloth .grain{
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.26) 0 1px, rgba(255,255,255,.08) 1px 2px, transparent 2px 3px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.24) 0 1px, rgba(255,255,255,.06) 1px 2px, transparent 2px 3px),
+    radial-gradient(ellipse at 42% 94%, rgba(0,0,0,.36), transparent 58%),
+    radial-gradient(ellipse at 34% 10%, rgba(255,240,220,.1), transparent 40%);
+}
+.book.m-paper .grain{
+  background:
+    repeating-linear-gradient(90deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(0deg, rgba(0,0,0,.09) 0 1px, transparent 1px 5px),
+    linear-gradient(to bottom, rgba(255,255,255,.18), transparent 18%, rgba(0,0,0,.22));
+}
+/* head/tail wear — every spine is bumped at the top */
+.book .wear{
+  position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 120% 30% at 50% 0%, rgba(0,0,0,.58), transparent 64%),
+    radial-gradient(ellipse 120% 24% at 50% 100%, rgba(0,0,0,.48), transparent 62%),
+    linear-gradient(to bottom, rgba(255,228,190,.1) 0 2px, transparent 2px);
+}
+.book .fox{position:absolute; border-radius:50%; background:rgba(134,96,44,.42); pointer-events:none}
+
+/* raised bands on a leather spine */
+.book .band{
+  position:absolute; left:0; right:0; height:7px;
+  background:linear-gradient(to bottom,
+    rgba(0,0,0,.6) 0 1px, rgba(255,238,208,.22) 1px 2px, var(--l) 2px 4px,
+    var(--c) 4px 6px, rgba(0,0,0,.62) 6px);
+  box-shadow:0 2px 3px rgba(0,0,0,.6), 0 -1px 2px rgba(0,0,0,.4);
+}
+/* fine gilt rules */
+.book .rule{position:absolute; left:15%; right:15%; height:1px;
+  background:rgba(244,214,158,.82); box-shadow:0 1px 0 rgba(0,0,0,.5)}
+
+/* depth: some volumes stand proud of the shelf, some are pushed back */
+.book.fwd{
+  box-shadow:7px 0 18px rgba(0,0,0,.72), inset 0 0 0 1px rgba(0,0,0,.4), inset -3px 0 6px rgba(0,0,0,.35);
+  filter:brightness(1.24) contrast(1.06); z-index:3;
+}
+.book.bck{filter:brightness(.56) saturate(.8) contrast(.95);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.5), 2px 0 8px rgba(0,0,0,.75)}
+.book.lean{transform-origin:bottom left; z-index:4}
+
+/* horizontal stack */
+.stack{position:relative; flex:0 0 auto; align-self:flex-end; display:flex; flex-direction:column-reverse}
+.stack i{display:block; border-radius:2px 3px 3px 2px;
+  box-shadow:0 2px 6px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.08), inset 0 -2px 3px rgba(0,0,0,.35)}
+.stack i::after{content:""; display:block; height:100%;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.12) 0 1px, transparent 1px 3px)}
+
+.gap{flex:0 0 auto}
+
+/* ============================================================
+   PROJECT NOOKS
+   ============================================================ */
+.nook{
+  position:relative; flex:0 0 auto; align-self:flex-end;
+  width:206px; height:98%;
+  display:block; text-align:left; padding:0;
+  background:transparent; border:none; -webkit-appearance:none; appearance:none;
+  transform-origin:center bottom; transition:transform .8s var(--ease); z-index:10;
+}
+.nook-frame{
+  position:absolute; inset:0; border-radius:3px; overflow:hidden;
+  padding:12px 14px 40px;
+  background:
+    /* the same grain the shelf boards carry, run vertically for a stile */
+    repeating-linear-gradient(0deg, rgba(0,0,0,.2) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(0deg, rgba(255,206,150,.055) 0 2px, transparent 2px 23px),
+    repeating-linear-gradient(0deg, rgba(0,0,0,.1) 0 2px, transparent 2px 61px),
+    linear-gradient(90deg,#8a5c33 0%,#5a3a1d 7%,#33200f 20%,#2a1a0b 50%,
+                    #33200f 80%,#5a3a1d 93%,#8a5c33 100%);
+}
+/* the opening itself: a bevelled lip, then a box you can see into */
+.nook-arch{
+  position:absolute; inset:12px 14px 40px; border-radius:78px 78px 4px 4px; overflow:hidden;
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.6),
+    inset 0 0 0 2px rgba(122,82,46,.5);
+}
+
+/* --- The opening is a portal: the scene fills it edge to edge, and all the
+   depth comes from the thickness of the aperture around it. --- */
+.nook-portal{
+  position:absolute; inset:0; z-index:5; pointer-events:none; border-radius:inherit;
+  background:
+    /* the wall thickness, clear through the middle and darkest at the rim */
+    radial-gradient(128% 88% at 50% 52%,
+      rgba(20,12,6,0) 52%,
+      rgba(20,12,6,.26) 74%,
+      rgba(20,12,6,.64) 91%,
+      rgba(12,7,3,.92) 100%),
+    /* a little light catching the near edge on the way in */
+    linear-gradient(118deg, rgba(255,238,204,.1) 0%, rgba(255,238,204,0) 32%);
+  box-shadow:
+    inset 0 3px 7px rgba(0,0,0,.5),
+    inset 0 -9px 18px rgba(0,0,0,.48),
+    inset 0 0 30px 8px rgba(0,0,0,.26);
+}
+/* the lit lip where the casing turns into the opening */
+.nook-lip{
+  position:absolute; inset:0; z-index:6; pointer-events:none; border-radius:inherit;
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.55),
+    inset 0 1.6px 0 rgba(255,224,180,.36),
+    inset 1.6px 0 0 rgba(255,216,168,.15),
+    inset -1.6px 0 0 rgba(0,0,0,.42),
+    inset 0 -2px 0 rgba(0,0,0,.5),
+    inset 0 0 15px 2px var(--nook-glow, rgba(255,168,74,.35));
+}
+
+/* the casing reads as solid wood standing proud of the shelf */
+.nook-frame{box-shadow:
+  0 0 0 1px rgba(0,0,0,.55),
+  inset 0 1px 0 rgba(255,214,160,.3),
+  inset 0 -2px 5px rgba(0,0,0,.65),
+  0 0 26px -4px var(--nook-glow, rgba(255,168,74,.4)),
+  0 14px 36px rgba(0,0,0,.7)}
+/* mitred joins where the casing meets at the corners */
+.nook-mitre{
+  position:absolute; inset:0; pointer-events:none; border-radius:inherit;
+  background:
+    linear-gradient(45deg,  transparent calc(50% - .6px), rgba(0,0,0,.42) 50%, transparent calc(50% + .6px)) top left    / 20px 20px no-repeat,
+    linear-gradient(-45deg, transparent calc(50% - .6px), rgba(0,0,0,.42) 50%, transparent calc(50% + .6px)) top right   / 20px 20px no-repeat,
+    linear-gradient(-45deg, transparent calc(50% - .6px), rgba(0,0,0,.35) 50%, transparent calc(50% + .6px)) bottom left / 20px 20px no-repeat,
+    linear-gradient(45deg,  transparent calc(50% - .6px), rgba(0,0,0,.35) 50%, transparent calc(50% + .6px)) bottom right/ 20px 20px no-repeat;
+}
+
+.scene{position:absolute; inset:0; overflow:hidden}
+
+/* --- an image standing in for a CSS scene --- */
+.sc-art{background:#0d0b10}
+.art-img{
+  position:absolute; inset:0; display:block;
+  width:100%; height:100%;
+  object-fit:cover; object-position:var(--art-pos, center);
+}
+.sc-art::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  box-shadow:inset 0 0 34px rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.35);
+  background:linear-gradient(to bottom, rgba(0,0,0,.28), rgba(0,0,0,0) 34%, rgba(0,0,0,.22));
+}
+.cs-hero .sc-art::after{box-shadow:none; background:none}
+
+/* the light each opening throws across the books beside it */
+.spill{
+  position:absolute; top:-8%; left:-140%; width:380%; height:120%;
+  pointer-events:none; mix-blend-mode:screen; z-index:9;
+  opacity:.88; transition:opacity .8s var(--ease);
+}
+.nook:hover .spill, .nook:focus-visible .spill{opacity:1}
+.nook:hover, .nook:focus-visible{transform:scale(1.022)}
+
+/* A slow breath of light around the opening, so a nook reads as a lit thing
+   set into the shelf rather than a picture hung on it. */
+.nook::before{
+  content:""; position:absolute; inset:-9% -30%;
+  border-radius:50%; pointer-events:none;
+  background:radial-gradient(ellipse at 50% 50%,
+    var(--nook-glow, rgba(255,168,74,.55)) 0%, rgba(0,0,0,0) 68%);
+  filter:blur(16px); mix-blend-mode:screen;
+  animation:nookBreath 5.6s ease-in-out infinite;
+}
+@keyframes nookBreath{
+  0%,100%{opacity:.34; transform:scale(.94)}
+  50%    {opacity:.72; transform:scale(1.06)}
+}
+
+.nook-caption{
+  position:absolute; left:14px; right:14px; bottom:40px; z-index:7;
+  padding:30px 12px 10px; text-align:center;
+  background:linear-gradient(to top, rgba(6,8,14,.86), rgba(6,8,14,.35) 60%, transparent);
+  pointer-events:none;
+}
+.n-cta{
+  font-size:10px; letter-spacing:.18em; text-transform:uppercase;
+  color:rgba(255,214,160,.82); display:inline-block;
+  transition:color .5s var(--ease), transform .5s var(--ease);
+}
+.nook:hover .n-cta, .nook:focus-visible .n-cta{color:#ffe1b4; transform:translateX(3px)}
+
+.plaque{
+  position:absolute; left:12px; right:12px; bottom:9px; z-index:11;
+  padding:7px 6px; border-radius:2px; text-align:center;
+  background:linear-gradient(to bottom,#c8a765 0%,#9d7e3e 42%,#6b5023 100%);
+  box-shadow:0 3px 9px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,238,190,.65), inset 0 -1px 0 rgba(0,0,0,.32);
+  font-family:var(--serif); font-weight:600;
+  font-size:13px; letter-spacing:.2em; text-transform:uppercase;
+  color:#241705; white-space:nowrap; overflow:hidden;
+}
+
+/* ---------- HYDRABLOOM: a slow wash of yellow, blue and green ---------- */
+.sc-flow{
+  background:linear-gradient(172deg, #ffdf94 0%, #ffeab6 18%, #b6dff0 46%, #a6d5e6 60%, #c3e5a4 84%, #a8d382 100%);
+  background-size:100% 240%;
+  animation:flowSlide 19s ease-in-out infinite alternate;
+}
+.sc-flow span{position:absolute; border-radius:50%; filter:blur(16px); pointer-events:none}
+.flow-a{
+  width:170%; height:56%; left:-34%; top:-14%;
+  background:radial-gradient(circle, rgba(255,228,150,.95), rgba(255,228,150,0) 68%);
+  animation:flowA 15s ease-in-out infinite alternate;
+}
+.flow-b{
+  width:180%; height:60%; left:-40%; top:26%;
+  background:radial-gradient(circle, rgba(168,216,238,.92), rgba(168,216,238,0) 68%);
+  animation:flowB 21s ease-in-out infinite alternate;
+}
+.flow-c{
+  width:170%; height:58%; left:-30%; top:56%;
+  background:radial-gradient(circle, rgba(192,228,160,.92), rgba(192,228,160,0) 68%);
+  animation:flowC 17s ease-in-out infinite alternate;
+}
+.flow-sheen{
+  width:200%; height:200%; left:-50%; top:-50%; border-radius:0;
+  background:linear-gradient(115deg, rgba(255,255,255,0) 42%, rgba(255,255,255,.34) 50%, rgba(255,255,255,0) 58%);
+  filter:blur(6px);
+  animation:flowSheen 13s ease-in-out infinite;
+}
+@keyframes flowSlide{from{background-position:50% 0%}to{background-position:50% 100%}}
+@keyframes flowA{from{transform:translate(-6%,-6%) scale(1)}  to{transform:translate(8%,10%) scale(1.14)}}
+@keyframes flowB{from{transform:translate(7%,6%)  scale(1.1)} to{transform:translate(-8%,-8%) scale(1)}}
+@keyframes flowC{from{transform:translate(-5%,8%) scale(1.05)}to{transform:translate(9%,-6%) scale(1.16)}}
+@keyframes flowSheen{0%,100%{transform:translateY(-24%) rotate(2deg)}50%{transform:translateY(24%) rotate(-2deg)}}
+
+/* ---------- LANTERN: the same slow flow in dusk colours ---------- */
+.sc-ember{
+  background:linear-gradient(172deg,
+    #f7c74f 0%, #efa23a 16%, #d4552f 40%, #a32f36 58%, #4a2a4e 76%, #1c2a4c 90%, #101b33 100%);
+  background-size:100% 240%;
+  animation:flowSlide 21s ease-in-out infinite alternate;
+}
+.sc-ember span{position:absolute; border-radius:50%; filter:blur(16px); pointer-events:none}
+.sc-ember .flow-a{
+  width:170%; height:56%; left:-34%; top:-16%;
+  background:radial-gradient(circle, rgba(255,206,96,.95), rgba(255,206,96,0) 68%);
+  animation:flowA 16s ease-in-out infinite alternate;
+}
+.sc-ember .flow-b{
+  width:180%; height:60%; left:-40%; top:24%;
+  background:radial-gradient(circle, rgba(203,60,44,.9), rgba(203,60,44,0) 68%);
+  animation:flowB 23s ease-in-out infinite alternate;
+}
+.sc-ember .flow-sheen{
+  width:200%; height:200%; left:-50%; top:-50%; border-radius:0;
+  background:linear-gradient(115deg, rgba(255,222,160,0) 42%, rgba(255,222,160,.3) 50%, rgba(255,222,160,0) 58%);
+  filter:blur(6px);
+  animation:flowSheen 15s ease-in-out infinite;
+}
+
+/* ============================================================
+   FULL-HEIGHT TEXT PANELS
+   ============================================================ */
+.panel{
+  position:absolute; top:0; bottom:0; z-index:20;
+  display:flex; align-items:center; justify-content:center; pointer-events:none;
+}
+.panel::before{ /* a soft pool of shade behind the copy */
+  content:""; position:absolute; inset:0 -24%;
+  background:
+    radial-gradient(62% 58% at 42% 50%, rgba(6,4,2,.96), rgba(6,4,2,.72) 46%, rgba(6,4,2,0) 82%);
+}
+/* the block is only as wide as its longest line, then centred in the gap, so
+   the books sit the same distance away on either side */
+/* left books | flexible content region | right books.
+   The region is the opening minus a reserved margin; the block fills it up to
+   a comfortable ceiling and is centred inside, so the distance to the books is
+   the same on both sides and grows with the screen rather than the type. */
+.panel .v-copy{
+  position:relative;
+  width:min(100%, clamp(250px, 46vw, 640px));
+  padding:0 clamp(10px, 1.4vw, 24px);
+  transform:translateY(var(--shift,0px)) scale(var(--fit,1));
+  transform-origin:center center;
+}
+.panel a, .panel button{pointer-events:auto}
+
+.eyebrow{font-size:clamp(8.5px, .72vw, 10.5px); letter-spacing:.34em; text-transform:uppercase;
+  color:rgba(236,220,186,.55); margin:0 0 clamp(10px, 2vh, 22px)}
+.display{
+  font-family:var(--serif); font-weight:300; line-height:1.02; letter-spacing:.01em;
+  margin:0; color:var(--amber-soft); text-shadow:0 6px 40px rgba(0,0,0,.95);
+}
+/* Sized against both axes and capped early: extra room on a large screen
+   becomes negative space around the copy rather than larger copy. */
+.panel-hero .display{font-size:clamp(30px, min(4.4vw, 7vh), 76px)}
+.panel-sec  .display{font-size:clamp(22px, min(3vw, 5vh), 48px)}
+.display em{font-style:italic; color:inherit}
+.lede{margin:0 0 14px; font-weight:300; color:rgba(241,231,208,.8)}
+.lede:last-child{margin-bottom:0}
+
+/* The body text lives in a fixed box. Add as much as you like — the title and
+   the call to action stay put, and the reader scrolls inside this instead. */
+/* only as wide as the paragraph it holds, so the bar and the arrow sit next
+   to the text rather than drifting out toward the books */
+.v-scroll-wrap{position:relative; width:100%;
+  margin-top:clamp(10px, 2vh, 22px)}
+/* The wheel always drives the shelf, so this box is worked with the bar at
+   its side or the arrow beneath it — never by scrolling over it. */
+.v-scroll{
+  max-height:var(--sh); overflow-y:auto; padding-right:16px;
+  overscroll-behavior:contain; scrollbar-width:thin;
+  scrollbar-color:rgba(255,207,141,.5) rgba(255,255,255,.08);
+  /* the beginning fades out as it leaves, rather than being cut off */
+  -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 16px,
+                     #000 calc(100% - 20px), transparent 100%);
+  mask-image:linear-gradient(to bottom, transparent 0, #000 16px,
+                     #000 calc(100% - 20px), transparent 100%);
+}
+.v-scroll-wrap:not(.can-scroll) .v-scroll{
+  -webkit-mask-image:none; mask-image:none; padding-right:0;
+}
+.v-scroll::-webkit-scrollbar{width:6px}
+.v-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,.08); border-radius:3px}
+.v-scroll::-webkit-scrollbar-thumb{
+  background:rgba(255,207,141,.5); border-radius:3px;
+  transition:background .3s var(--ease);
+}
+.v-scroll::-webkit-scrollbar-thumb:hover{background:rgba(255,207,141,.8)}
+.v-scroll:focus-visible{outline:2px solid var(--amber-soft); outline-offset:6px; border-radius:2px}
+.panel .v-scroll{pointer-events:auto}
+
+/* a slanted control that reveals the next few lines when pressed */
+.scroll-hint{
+  position:absolute; right:-2px; bottom:-21px;
+  display:flex; align-items:center; gap:6px; padding:3px 2px;
+  transform:rotate(-7deg); transform-origin:right center;
+  font-size:9px; letter-spacing:.26em; text-transform:uppercase;
+  color:var(--amber-soft); opacity:0; pointer-events:none; cursor:pointer;
+  transition:opacity .45s var(--ease), transform .35s var(--ease);
+}
+.scroll-hint i{
+  width:6px; height:6px; border-right:1.4px solid currentColor;
+  border-bottom:1.4px solid currentColor; transform:rotate(45deg);
+  animation:hintNudge 1.9s ease-in-out infinite;
+}
+@keyframes hintNudge{0%,100%{transform:rotate(45deg) translate(0,0)}50%{transform:rotate(45deg) translate(2px,2px)}}
+.v-scroll-wrap.can-scroll .scroll-hint{opacity:.8; pointer-events:auto}
+.v-scroll-wrap.can-scroll .scroll-hint:hover,
+.v-scroll-wrap.can-scroll .scroll-hint:focus-visible{opacity:1; color:#ffe1b4}
+/* at the end it points back the other way, to return to the start */
+.v-scroll-wrap.at-end .scroll-hint i{animation:none; transform:rotate(-135deg)}
+.scroll-hint i{transition:transform .35s var(--ease)}
+/* no label, so the arrow carries it alone and gets a real tap target */
+.scroll-hint.arrow-only{gap:0; padding:7px 9px; bottom:-26px; right:-6px}
+.scroll-hint.arrow-only i{width:8px; height:8px; border-width:1.6px}
+
+.panel-hero .v-scroll{--sh:clamp(58px, 10.5vh, 116px)}
+.panel-sec  .v-scroll{--sh:clamp(78px, 16vh, 184px)}
+.panel-hero .lede{max-width:min(100%, 46ch); font-size:clamp(12px, min(1.05vw, 1.75vh), 16px); line-height:1.7}
+.panel-sec  .lede{max-width:min(100%, 50ch); font-size:clamp(11.5px, min(.95vw, 1.6vh), 15px); line-height:1.72}
+.inline-cta{
+  display:inline-block; margin-top:clamp(12px, 2.2vh, 26px);
+  font-size:clamp(9px, .82vw, 11.5px); letter-spacing:.2em; text-transform:uppercase;
+  color:var(--amber-soft); border-bottom:1px solid rgba(255,207,141,.4); padding-bottom:6px;
+  transition:border-color .4s var(--ease), transform .4s var(--ease);
+}
+.inline-cta:hover{border-color:var(--amber-soft); transform:translateX(4px)}
+.contact-links{display:flex; flex-wrap:wrap; gap:14px 22px; margin-top:24px}
+.contact-links a{font-size:clamp(11px, 1vw, 13.5px); letter-spacing:.12em; color:rgba(241,231,208,.88);
+  text-decoration:none; border-bottom:1px solid rgba(241,231,208,.28); padding-bottom:4px;
+  transition:color .4s var(--ease), border-color .4s var(--ease)}
+.contact-links a:hover{color:var(--amber-soft); border-color:var(--amber-soft)}
+
+/* ============================================================
+   HINT + RAIL
+   ============================================================ */
+.hint{
+  position:fixed; left:50%; bottom:26px; transform:translateX(-50%); z-index:60;
+  display:flex; align-items:center; gap:10px; margin:0;
+  font-size:clamp(9px, .72vw, 10.5px); letter-spacing:.3em; text-transform:uppercase;
+  color:rgba(239,227,200,.62); pointer-events:none; white-space:nowrap;
+  transition:opacity .8s var(--ease);
+}
+.hint span{letter-spacing:.24em; color:rgba(239,227,200,.34)}
+.hint span::before{content:"·"; margin-right:9px; color:rgba(239,227,200,.28)}
+/* a small wheel that nudges, so the instruction reads at a glance */
+.hint i{
+  position:relative; width:13px; height:20px; flex:0 0 auto;
+  border:1.2px solid rgba(239,227,200,.45); border-radius:7px;
+}
+.hint i::after{
+  content:""; position:absolute; left:50%; top:4px; width:2px; height:4px;
+  margin-left:-1px; border-radius:1px; background:rgba(255,207,141,.85);
+  animation:hintWheel 2.1s ease-in-out infinite;
+}
+@keyframes hintWheel{
+  0%,100%{transform:translateY(0);   opacity:.35}
+  45%    {transform:translateY(7px); opacity:1}
+}
+.hint.gone{opacity:0}
+.rail{position:fixed; left:50%; bottom:58px; transform:translateX(-50%); z-index:60;
+  display:flex; align-items:center; width:min(300px,52vw); height:22px;
+  opacity:0; transition:opacity .8s var(--ease)}
+.rail.on{opacity:1}
+.rail:not(.on){visibility:hidden; pointer-events:none}
+.rail-track{position:absolute; left:0; right:0; top:11px; height:1px; background:rgba(239,227,200,.16)}
+.rail-thumb{position:absolute; top:10px; height:3px; border-radius:2px; background:var(--amber-soft);
+  box-shadow:0 0 10px rgba(255,190,110,.6)}
+.rail-mark{position:absolute; top:5px; width:13px; height:13px; margin-left:-6px; border-radius:50%; cursor:pointer}
+.rail-mark::after{content:""; position:absolute; left:5px; top:5px; width:3px; height:3px; border-radius:50%;
+  background:rgba(239,227,200,.45); transition:background .3s, transform .3s}
+.rail-mark:hover::after{background:var(--amber-soft); transform:scale(1.6)}
+
+/* ============================================================
+   CASE STUDY
+   ============================================================ */
+#overlay{position:fixed; inset:0; z-index:100; overflow-y:auto; overflow-x:hidden;
+  background:#0a0a10; will-change:transform}
+#overlay[hidden]{display:none}
+.case-inner{opacity:0; transition:opacity .55s var(--ease) .3s}
+#overlay.shown .case-inner{opacity:1}
+.cs-hero{position:relative; height:66vh; min-height:360px; display:flex; align-items:flex-end;
+  padding:0 clamp(20px,7vw,110px) clamp(28px,6vh,64px); overflow:hidden}
+.cs-hero .scene{position:absolute; inset:0}
+.cs-hero::after{content:""; position:absolute; inset:0;
+  background:linear-gradient(to top, rgba(6,6,12,.94) 4%, rgba(6,6,12,.42) 48%, rgba(6,6,12,.12))}
+.cs-hero .cs-head{position:relative; z-index:3}
+
+.back{
+  position:fixed; top:18px; left:clamp(16px,4vw,44px); z-index:110;
+  display:inline-flex; align-items:center; gap:9px; padding:11px 18px; border-radius:999px;
+  background:rgba(14,11,8,.74); backdrop-filter:blur(9px);
+  border:1px solid rgba(239,227,200,.24);
+  font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:rgba(244,234,214,.92);
+  transition:background .35s var(--ease), border-color .35s var(--ease);
+}
+.back:hover{background:rgba(34,24,15,.9); border-color:rgba(255,207,141,.55)}
+.back[hidden]{display:none}
+
+.cs-body{max-width:1080px; margin:0 auto; padding:clamp(48px,9vh,96px) clamp(20px,7vw,64px) 140px}
+.cs-hero-block{height:min(46vh,380px); border-radius:4px; margin-bottom:clamp(40px,8vh,84px);
+  display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,.1);
+  background:repeating-linear-gradient(45deg, rgba(255,255,255,.03) 0 12px, transparent 12px 24px);
+  font-size:11px; letter-spacing:.3em; text-transform:uppercase; color:rgba(255,255,255,.35)}
+.cs-section{display:grid; grid-template-columns:170px 1fr; gap:clamp(18px,4vw,56px);
+  padding:34px 0; border-top:1px solid rgba(255,255,255,.09)}
+.cs-section h2{margin:0; font-family:var(--serif); font-weight:400; font-size:23px; color:rgba(255,255,255,.95)}
+.cs-section p{margin:0 0 16px; font-size:15px; line-height:1.85; color:rgba(255,255,255,.66);
+  font-weight:300; max-width:64ch}
+.cs-section p:last-child{margin-bottom:0}
+.cs-meta{display:flex; flex-wrap:wrap; gap:38px; padding-bottom:44px; margin:0}
+.cs-meta div{min-width:110px}
+.cs-meta dt{font-size:10px; letter-spacing:.26em; text-transform:uppercase; color:rgba(255,255,255,.42)}
+.cs-meta dd{margin:8px 0 0; font-size:14px; color:rgba(255,255,255,.85); font-weight:300}
+.cs-kicker{font-size:10px; letter-spacing:.34em; text-transform:uppercase; color:rgba(255,255,255,.55); margin:0 0 14px}
+.cs-title{font-family:var(--serif); font-weight:300; font-size:clamp(46px,8vw,104px);
+  line-height:.95; margin:0; letter-spacing:.04em; color:#fff}
+.cs-sub{margin:16px 0 0; font-size:15px; font-weight:300; color:rgba(255,255,255,.78); max-width:40ch}
+.cs-foot{padding-top:46px; text-align:center}
+
+/* --- Lantern: a short account while the full write-up is being made --- */
+/* a shorter page than HydraBloom, so it reads on a tighter measure */
+.cs-lantern .cs-body{max-width:1000px; padding-bottom:clamp(90px,14vh,150px)}
+.wip-badge{
+  display:inline-flex; align-items:center; gap:10px; margin-bottom:22px;
+  padding:8px 17px 8px 14px; border-radius:999px;
+  background:rgba(255,168,74,.14); border:1px solid rgba(255,180,100,.4);
+  font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color:#ffcf8d;
+}
+.wip-badge i{
+  width:7px; height:7px; border-radius:50%; background:#ffb454;
+  animation:wipPulse 2.6s ease-out infinite;
+}
+@keyframes wipPulse{
+  0%  {box-shadow:0 0 0 0 rgba(255,180,84,.6)}
+  70% {box-shadow:0 0 0 10px rgba(255,180,84,0)}
+  100%{box-shadow:0 0 0 0 rgba(255,180,84,0)}
+}
+.wip-note{
+  display:flex; gap:clamp(16px,2.4vw,26px); align-items:flex-start;
+  padding:clamp(24px,3vw,34px); border-radius:16px;
+  margin-bottom:clamp(40px,6vh,64px);
+  background:rgba(255,168,74,.07); border:1px solid rgba(255,180,100,.2);
+}
+.wip-note .mark{
+  flex:0 0 auto; width:40px; height:40px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(255,180,100,.15); color:#ffcf8d;
+  font-family:var(--serif); font-size:20px; line-height:1;
+}
+.wip-note h3{margin:0 0 9px; font-family:var(--serif); font-weight:500;
+  font-size:clamp(19px,2vw,25px); color:#fff}
+.wip-note p{margin:0; font-size:15px; line-height:1.8;
+  color:rgba(255,255,255,.62); max-width:62ch}
+
+.lan-lead{
+  margin:0 0 clamp(34px,5vh,54px); max-width:26ch;
+  font-family:var(--serif); font-weight:300;
+  font-size:clamp(23px,3vw,40px); line-height:1.3; color:rgba(255,255,255,.94);
+}
+.lan-lead em{font-style:italic; color:var(--amber-soft)}
+.lan-body{max-width:62ch}
+.lan-body p{margin:0 0 20px; font-size:clamp(15px,1.4vw,17px);
+  line-height:1.9; color:rgba(255,255,255,.68)}
+.lan-body p:last-child{margin-bottom:0}
+
+
+
+/* ============================================================
+   HYDRABLOOM CASE STUDY
+   One continuous white / yellow / blue / green wash runs the
+   whole page, so sections never meet on a hard edge.
+   ============================================================ */
+#overlay.light{background:#ffffff}
+
+.cs-hydra{
+  --sun:#ffc24d; --sun-soft:#ffdb95; --sun-pale:#fff4da;
+  --sky:#5fb0da; --sky-soft:#a5d8f2; --sky-pale:#e4f3fb;
+  --leaf:#6ba348; --leaf-soft:#a9ce7c; --leaf-pale:#eaf5dc;
+  --hb-ink:#22302a; --hb-soft:#5b6b62; --hb-line:rgba(34,48,42,.12);
+  position:relative; font-family:var(--sans); color:var(--hb-ink);
+  /* one unbroken pass down the page: white, yellow, blue, green, white.
+     0-13% sits behind the hero, so the visible run starts from the wave. */
+  background:linear-gradient(180deg,
+    #ffffff 0%, #ffffff 15%,
+    #fff8e4 23%, #ffefc4 32%, #fdf3d2 39%,
+    #f2f5f8 46%,
+    #ddeef9 54%, #c7e3f5 62%, #dcf0f2 69%,
+    #e6f4e6 76%,
+    #ddf0ca 83%, #cae7ac 89%,
+    #e9f5df 95%, #ffffff 100%);
+}
+.hb-aura{position:absolute; border-radius:50%; pointer-events:none; filter:blur(90px); opacity:.5; z-index:1}
+
+.hb-track{position:fixed; top:0; left:0; right:0; height:3px; z-index:115; background:rgba(34,48,42,.07)}
+.hb-fill{height:100%; width:calc(var(--scroll,0) * 100%);
+  background:linear-gradient(90deg, var(--sun), var(--sky) 54%, var(--leaf))}
+.hb-sun{
+  position:fixed; top:1.5px; left:calc(var(--scroll,0) * 100%); z-index:116;
+  width:15px; height:15px; margin:-7.5px 0 0 -7.5px; border-radius:50%;
+  background:radial-gradient(circle at 38% 34%, #fffbee, var(--sun) 62%, #eda32c);
+  box-shadow:0 0 0 4px rgba(255,194,77,.25), 0 2px 10px rgba(237,163,44,.5);
+}
+
+/* --- shared --- */
+.hb-sec{position:relative; z-index:3; padding:clamp(76px,13vh,164px) clamp(20px,7vw,96px)}
+.hb-sec > *{max-width:1180px; margin-inline:auto}
+.hb-eyebrow{font-size:10.5px; letter-spacing:.34em; text-transform:uppercase;
+  color:var(--hb-soft); margin:0 0 22px}
+.hb-xl{font-family:var(--serif); font-weight:600; margin:0;
+  font-size:clamp(40px,6.6vw,102px); line-height:.98; letter-spacing:-.005em; max-width:16ch}
+.hb-xl.wide{max-width:24ch}
+.hb-lead{margin:26px 0 0; max-width:60ch; font-size:clamp(15px,1.35vw,18px);
+  line-height:1.8; color:var(--hb-soft)}
+
+.reveal{opacity:0; transform:translateY(30px);
+  transition:opacity 1s var(--ease), transform 1s var(--ease)}
+.reveal.in{opacity:1; transform:none}
+.reveal.d1{transition-delay:.09s} .reveal.d2{transition-delay:.18s}
+.reveal.d3{transition-delay:.27s} .reveal.d4{transition-delay:.36s}
+
+/* --- phones --- */
+.hb-float{animation:hbFloat 7s ease-in-out infinite}
+@keyframes hbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.hb-phone{
+  position:relative; width:100%; aspect-ratio:var(--ios);
+  border-radius:var(--ios-r); padding:2.7%;
+  background:linear-gradient(155deg,#ffffff,#e6edf2);
+  box-shadow:0 34px 64px -20px rgba(32,58,78,.42), 0 6px 16px rgba(32,58,78,.13), inset 0 1px 0 #fff;
+  transform:perspective(1000px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateZ(0);
+  transition:transform .5s var(--ease), box-shadow .5s var(--ease);
+}
+/* the Dynamic Island: 125 x 37.5pt, sitting 11pt below the top of the screen */
+.hb-phone::after{
+  content:""; position:absolute; top:3.2%; left:50%; width:23%; height:3.2%;
+  transform:translateX(-50%); border-radius:999px;
+  background:rgba(255,255,255,.5); box-shadow:0 0 0 1px rgba(255,255,255,.22);
+}
+.hb-phone .scr{
+  width:100%; height:100%; border-radius:11% / 5.06%; overflow:hidden; position:relative;
+  background:linear-gradient(to bottom, var(--sky-pale), var(--sun-pale) 54%, var(--leaf-pale));
+  display:flex; align-items:center; justify-content:center;
+}
+.hb-phone .scr img{width:100%; height:100%; object-fit:cover; display:block}
+.hb-phone .scr em{font-style:normal; font-size:9.5px; letter-spacing:.2em; text-transform:uppercase;
+  color:rgba(34,48,42,.4); text-align:center; padding:0 14px; line-height:1.7}
+/* glass glare that sweeps the screen */
+.hb-phone .scr::after{
+  content:""; position:absolute; top:-60%; left:-60%; width:60%; height:220%;
+  transform:rotate(22deg) translateX(-40%);
+  background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.5), rgba(255,255,255,0));
+  transition:transform 1s var(--ease); pointer-events:none;
+}
+.hb-phone:hover .scr::after{transform:rotate(22deg) translateX(340%)}
+.hb-phone.lift{box-shadow:0 50px 88px -22px rgba(32,58,78,.5), 0 8px 20px rgba(32,58,78,.16), inset 0 1px 0 #fff}
+/* the only pointer response a phone has: it rises a little */
+.hb-phone:hover{
+  transform:translateY(-10px) scale(1.015);
+  box-shadow:0 52px 92px -22px rgba(14,52,48,.55), 0 10px 22px rgba(14,52,48,.2), inset 0 1px 0 #fff;
+}
+.scr-swap{animation:hbSwap .55s var(--ease)}
+@keyframes hbSwap{from{opacity:0; transform:scale(.955) translateY(10px)}to{opacity:1; transform:none}}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hb-hero{
+  position:relative; z-index:3; min-height:100vh; min-height:100svh; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  gap:clamp(18px,3vw,56px);
+  padding:clamp(80px,12vh,140px) clamp(20px,6vw,86px) clamp(130px,19vh,220px);
+  background:linear-gradient(132deg,
+    #fbe3a8 0%, #f7ecba 16%, #ddedc8 36%, #cbe7d8 56%, #c6dcef 78%, #d8eaf8 100%);
+  /* oversized so there is room to slide the whole wash around */
+  background-size:220% 220%;
+  animation:hbSwell 38s ease-in-out infinite alternate;
+}
+@keyframes hbSwell{
+  from{background-position:12% 34%}
+  to  {background-position:88% 66%}
+}
+
+/* Broad pools of colour drifting across the wash. Their periods share no
+   common factor, so the combination never visibly repeats. */
+/* No filter and no border-radius here on purpose: a large blurred layer
+   clipped to a circle is what was painting a dark disc behind the phones.
+   The radial gradient already fades to nothing, so it needs neither. */
+.hb-tide{position:absolute; z-index:1; pointer-events:none}
+.hb-tide.t1{
+  left:-16%; top:-22%; width:66%; height:74%; opacity:.55;
+  background:radial-gradient(closest-side circle, #ffe9be, rgba(255,233,190,.55) 42%, rgba(255,233,190,0) 78%);
+  animation:hbTide1 26s ease-in-out infinite alternate;
+}
+.hb-tide.t2{
+  right:-20%; top:6%; width:72%; height:80%; opacity:.5;
+  background:radial-gradient(closest-side circle, #c6dcef, rgba(198,220,239,.55) 42%, rgba(198,220,239,0) 78%);
+  animation:hbTide2 31s ease-in-out infinite alternate;
+}
+.hb-tide.t3{
+  left:8%; bottom:-30%; width:74%; height:76%; opacity:.5;
+  background:radial-gradient(closest-side circle, #d5eab9, rgba(213,234,185,.55) 42%, rgba(213,234,185,0) 78%);
+  animation:hbTide3 37s ease-in-out infinite alternate;
+}
+.hb-tide.t4{
+  left:24%; top:-16%; width:56%; height:60%; opacity:.42;
+  background:radial-gradient(closest-side circle, #ffffff, rgba(255,255,255,.5) 42%, rgba(255,255,255,0) 78%);
+  animation:hbTide4 43s ease-in-out infinite alternate;
+}
+@keyframes hbTide1{from{transform:translate(-4%,-3%) scale(1)}   to{transform:translate(12%,9%)  scale(1.18)}}
+@keyframes hbTide2{from{transform:translate(6%,7%)   scale(1.12)}to{transform:translate(-9%,-6%) scale(1)}}
+@keyframes hbTide3{from{transform:translate(-7%,5%)  scale(1.06)}to{transform:translate(10%,-8%) scale(1.2)}}
+@keyframes hbTide4{from{transform:translate(5%,-4%)  scale(1.1)} to{transform:translate(-8%,8%)  scale(1)}}
+/* the wash is pale now, so the copy carries ink rather than white */
+.hb-hero-copy{
+  position:relative; z-index:4; color:var(--hb-ink);
+  flex:0 1 min(40%, 500px);
+}
+.hb-mark{
+  width:clamp(64px,6vw,92px); aspect-ratio:1; border-radius:26%;
+  background:#fff center/cover no-repeat;
+  box-shadow:0 16px 34px -14px rgba(20,50,45,.5);
+  position:relative; overflow:hidden; margin-bottom:clamp(26px,4.5vh,46px);
+}
+.hb-mark i{
+  position:absolute; left:50%; top:46%; width:34%; height:40%;
+  transform:translate(-50%,-50%) rotate(-2deg);
+  background:linear-gradient(to bottom, var(--sky-soft), #3f9d86);
+  border-radius:50% 50% 50% 50% / 62% 62% 38% 38%;
+}
+.hb-mark b{
+  position:absolute; right:24%; top:26%; width:16%; height:14%;
+  border-radius:70% 10% 70% 10%; background:var(--leaf-soft);
+}
+.hb-mark.has-icon i, .hb-mark.has-icon b{display:none}
+
+/* the wordmark is HydraBloom's logotype rather than a heading in this
+   document, so it is set in the product's own face */
+.hb-word2{
+  margin:0; font-family:var(--brand); font-weight:700;
+  /* one unbreakable word in a column capped at 500px, so it is scaled against
+     that column rather than the whole window */
+  font-size:clamp(30px, min(3.6vw, 7.2vh), 62px); line-height:1.04; letter-spacing:0;
+  color:var(--hb-ink);
+}
+/* the same face, weight, and colour as every lead paragraph on the page */
+/* same face, weight, size and colour as the body copy through the page */
+.hb-desc{
+  margin:clamp(18px,3vh,30px) 0 0; max-width:34ch;
+  font-family:var(--sans); font-weight:400;
+  font-size:clamp(13.5px, min(1.35vw, 1.9vh), 18px); line-height:1.78;
+  color:var(--hb-soft);
+}
+.hb-meta{
+  display:flex; flex-wrap:wrap; gap:clamp(18px,2.6vw,40px);
+  margin:clamp(28px,4.5vh,50px) 0 0; padding:0;
+}
+.hb-meta dt{font-family:var(--sans); font-size:clamp(8.5px, .78vw, 10px); letter-spacing:.24em;
+  text-transform:uppercase; color:var(--hb-soft)}
+.hb-meta dd{margin:7px 0 0; font-family:var(--sans); font-size:clamp(12.5px, 1.1vw, 14px);
+  font-weight:500; color:var(--hb-ink)}
+
+/* Cluster geometry taken from the reference: the group occupies the right 62%
+   of the hero at full height, each device is 38.6% of that width, and all four
+   share one clockwise tilt so the tops lean right. The upper pair is cropped
+   by the top edge, the lower pair sits clear of it. */
+/* The cluster is inset from the hero's edges, and the phones are sized from
+   ITS height rather than the viewport — so they can never reach the wave, the
+   copy, or the right edge no matter how the window is shaped. */
+/* sits beside the copy as a flex item, so the two travel together and the
+   pair stays centred as a group rather than pinned to the right edge */
+.hb-cluster{
+  position:relative; align-self:stretch;
+  flex:0 1 min(46%, 620px);
+  z-index:3; pointer-events:none;
+}
+/* A phone stands 74% of the cluster tall — about 54% of the viewport, which is
+   where it reads at full size. The two caps stop it outgrowing the space:
+   62vh keeps the pair clear of top and bottom, 34vw keeps it clear of the copy
+   on narrow desktops. Whichever binds first wins. */
+/* Width-driven, not height-driven. Three handsets at 13% overlap span 2.74x
+   one phone's width, so capping a phone at 32% of the cluster guarantees the
+   trio fits across it at any size. 22vh keeps the same true vertically, and
+   210px stops them ballooning on very large displays. */
+.hb-cluster .pod{
+  position:absolute; pointer-events:auto;
+  width:min(32%, 21vh, 210px);
+  aspect-ratio:var(--ios); height:auto;
+  animation:hbBob 8s ease-in-out infinite;
+}
+/* height drives the phone; the aspect ratio gives back the width */
+.hb-cluster .hb-phone{
+  height:100%; width:auto;
+  aspect-ratio:var(--ios);
+  border-radius:var(--ios-r);
+  padding:2.7%;
+  box-shadow:0 26px 54px -30px rgba(28,66,84,.3), 0 4px 12px rgba(28,66,84,.09), inset 0 1px 0 #fff;
+}
+/* bob drives the independent translate property so the tilt survives */
+@keyframes hbBob{0%,100%{translate:0 0}50%{translate:0 -16px}}
+/* both hang off the centre and are offset by a share of their OWN size, so the
+   overlap and the step stay identical at every screen size */
+/* All three hang off the centre of the cluster and are offset by a share of
+   their OWN width, so the 13% overlap holds at every size. Centres sit at
+   -0.87w, 0 and +0.87w; the middle one drops lower and sits in front. */
+.hb-cluster .pod{left:50%; top:50%}
+.hb-cluster .p1{
+  z-index:3;
+  transform:translate(-137%, -64%) rotate(-13deg);
+  animation-delay:-.4s;
+}
+.hb-cluster .p2{
+  z-index:4;
+  transform:translate(-50%, -36%) rotate(-1deg);
+  animation-delay:-3.2s;
+}
+.hb-cluster .p3{
+  z-index:2;
+  transform:translate(37%, -58%) rotate(12deg);
+  animation-delay:-6s;
+}
+/* the only pointer response left: a gentle lift and a pass of glare */
+.hb-cluster .hb-phone:hover{
+  transform:scale(1.035);
+  box-shadow:0 34px 66px -30px rgba(28,66,84,.36), 0 6px 16px rgba(28,66,84,.12), inset 0 1px 0 #fff;
+}
+
+
+/* placeholder screens get an abstract composition instead of dead space */
+.scr-deco{position:absolute; inset:0; overflow:hidden}
+.scr-deco i{position:absolute; border-radius:50%; filter:blur(15px); opacity:.75}
+.scr-deco i:nth-of-type(1){width:150%; height:44%; left:-28%; top:-10%;
+  background:radial-gradient(circle, #ffe2a6, rgba(255,226,166,0) 70%)}
+.scr-deco i:nth-of-type(2){width:160%; height:48%; left:-34%; top:28%;
+  background:radial-gradient(circle, #bfe0f2, rgba(191,224,242,0) 70%)}
+.scr-deco i:nth-of-type(3){width:150%; height:46%; left:-24%; bottom:-12%;
+  background:radial-gradient(circle, #cfe8b4, rgba(207,232,180,0) 70%)}
+.scr-deco::before, .scr-deco::after{
+  content:""; position:absolute; border-radius:50%; border:1.5px solid rgba(255,255,255,.6);
+}
+.scr-deco::before{width:164%; height:62%; left:-32%; top:14%; transform:rotate(-13deg)}
+.scr-deco::after{width:140%; height:52%; left:-16%; top:46%;
+  transform:rotate(9deg); border-color:rgba(255,255,255,.4)}
+
+.hb-wave{position:absolute; left:0; right:0; bottom:-1px; z-index:5; pointer-events:none; line-height:0}
+.hb-wave svg{display:block; width:100%; height:clamp(90px,15vh,190px)}
+/* both crests are anchored to the bottom edge, so a little vertical swell
+   reads as water without ever opening a gap */
+.hb-wave path{transform-box:fill-box; transform-origin:50% 100%}
+.hb-wave path:nth-child(1){animation:hbCrestA 13s ease-in-out infinite alternate}
+.hb-wave path:nth-child(2){animation:hbCrestB 17s ease-in-out infinite alternate}
+@keyframes hbCrestA{from{transform:translateY(3%)  scaleY(1)}    to{transform:translateY(-4%) scaleY(1.07)}}
+@keyframes hbCrestB{from{transform:translateY(-3%) scaleY(1.05)} to{transform:translateY(3%)  scaleY(1)}}
+
+/* ============================================================
+   SECTIONS
+   ============================================================ */
+.hb-chapters{list-style:none; margin:clamp(38px,6vh,66px) 0 0; padding:0;
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(238px,1fr));
+  border-top:1px solid var(--hb-line)}
+.hb-chapters li{border-bottom:1px solid var(--hb-line)}
+.hb-chapters button{display:block; width:100%; text-align:left; padding:28px 4px;
+  transition:color .3s var(--ease), padding-left .3s var(--ease)}
+.hb-chapters button:hover{color:var(--leaf); padding-left:12px}
+.hb-chapters .n{display:block; font-size:11px; letter-spacing:.24em; color:var(--hb-soft); margin-bottom:10px}
+.hb-chapters .t{display:block; font-family:var(--serif); font-size:20px; line-height:1.3}
+
+.hb-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(262px,1fr));
+  gap:clamp(16px,2vw,26px); margin-top:clamp(40px,6vh,68px)}
+.hb-card{padding:clamp(26px,3vw,36px); border-radius:16px;
+  background:rgba(255,255,255,.74); border:1px solid rgba(255,255,255,.9);
+  box-shadow:0 18px 40px -22px rgba(32,58,78,.4)}
+.hb-card h3{margin:0 0 14px; font-size:10px; letter-spacing:.24em; text-transform:uppercase; color:var(--hb-soft)}
+.hb-card p{margin:0; font-size:15px; line-height:1.75; color:var(--hb-soft)}
+
+/* --- research: three views, one row style --- */
+.hb-tabs{display:flex; flex-wrap:wrap; gap:8px; margin:clamp(34px,5vh,54px) 0 0}
+.hb-tabs button{padding:13px 24px; border-radius:999px; font-size:12px; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--hb-soft);
+  background:rgba(255,255,255,.6); border:1px solid rgba(255,255,255,.9);
+  transition:background .35s var(--ease), color .35s var(--ease), box-shadow .35s var(--ease)}
+.hb-tabs button:hover{background:#fff}
+.hb-tabs button[aria-selected="true"]{background:var(--hb-ink); color:#fff; border-color:var(--hb-ink);
+  box-shadow:0 12px 26px -12px rgba(34,48,42,.7)}
+.hb-panel{display:none; margin-top:clamp(26px,4vh,44px)}
+.hb-panel.on{display:block}
+.hb-stack{display:grid; gap:12px}
+.hb-row{
+  padding:clamp(24px,2.8vw,34px) clamp(24px,3vw,40px); border-radius:16px;
+  background:rgba(255,255,255,.74); border:1px solid rgba(255,255,255,.92);
+  box-shadow:0 18px 40px -24px rgba(32,58,78,.4);
+  opacity:0; transform:translateY(22px);
+  animation:hbRow .7s var(--ease) forwards;
+  transition:transform .45s var(--ease), box-shadow .45s var(--ease);
+}
+.hb-panel.on .hb-row:nth-child(1){animation-delay:.02s}
+.hb-panel.on .hb-row:nth-child(2){animation-delay:.10s}
+.hb-panel.on .hb-row:nth-child(3){animation-delay:.18s}
+.hb-panel.on .hb-row:nth-child(4){animation-delay:.26s}
+@keyframes hbRow{to{opacity:1; transform:none}}
+.hb-row:hover{transform:translateX(8px); box-shadow:0 26px 52px -26px rgba(32,58,78,.48)}
+.hb-row h4{margin:0 0 10px; font-family:var(--serif); font-size:clamp(20px,2.1vw,27px); font-weight:600}
+.hb-row p{margin:0; font-size:15.5px; line-height:1.78; color:var(--hb-soft); max-width:74ch}
+.hb-row p + p{margin-top:8px}
+.hb-row b{color:var(--hb-ink); font-weight:600}
+
+/* --- the introducing card --- */
+.hb-intro{position:relative; z-index:3; padding:clamp(60px,10vh,130px) clamp(20px,7vw,96px)}
+.hb-intro-wrap{max-width:1180px; margin-inline:auto; perspective:1400px}
+.hb-intro-card{
+  position:relative; overflow:hidden; border-radius:32px; text-align:center;
+  padding:clamp(56px,11vh,140px) clamp(26px,5vw,80px);
+  background:linear-gradient(140deg, rgba(255,255,255,.78), rgba(255,255,255,.34));
+  -webkit-backdrop-filter:blur(24px) saturate(1.35); backdrop-filter:blur(24px) saturate(1.35);
+  border:1px solid rgba(255,255,255,.95);
+  box-shadow:0 60px 120px -50px rgba(20,60,78,.55), inset 0 1px 0 rgba(255,255,255,1);
+  transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));
+  transition:transform .6s var(--ease), box-shadow .6s var(--ease);
+}
+.hb-intro-card::before{
+  content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:radial-gradient(520px circle at var(--mx,50%) var(--my,10%),
+    rgba(255,255,255,.95), rgba(255,255,255,0) 62%);
+  opacity:.85;
+}
+.hb-intro-card::after{
+  content:""; position:absolute; top:-70%; left:-40%; width:34%; height:240%;
+  z-index:0; pointer-events:none; transform:rotate(20deg);
+  background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.7), rgba(255,255,255,0));
+  animation:hbSheen 8s ease-in-out infinite;
+}
+@keyframes hbSheen{0%,100%{transform:translateX(-30%) rotate(20deg)}50%{transform:translateX(400%) rotate(20deg)}}
+.hb-orb{position:absolute; border-radius:50%; filter:blur(46px); pointer-events:none; z-index:0; opacity:.7}
+.hb-intro h2{
+  position:relative; z-index:1; margin:0 auto; max-width:16ch; text-align:center;
+  font-family:var(--serif); font-weight:600;
+  font-size:clamp(34px,6.6vw,104px); line-height:1.0; letter-spacing:-.015em; color:var(--hb-ink);
+}
+.hb-intro h2 span{display:inline-block; opacity:0; transform:translateY(42px) rotate(3deg);
+  transition:opacity 1s var(--ease), transform 1s var(--ease)}
+.hb-intro.in h2 span{opacity:1; transform:none}
+.hb-intro .sub{position:relative; z-index:1; margin:clamp(14px,2vh,22px) auto 0; max-width:46ch;
+  font-size:clamp(14px,1.3vw,18px); line-height:1.7; color:var(--hb-soft); text-align:center}
+
+/* --- visual system --- */
+.hb-trio{display:grid; grid-template-columns:repeat(auto-fit,minmax(276px,1fr));
+  gap:clamp(16px,2.2vw,28px); margin-top:clamp(44px,6vh,72px); perspective:1200px}
+.hb-el{
+  position:relative; border-radius:20px; padding:clamp(30px,3.4vw,44px);
+  display:flex; flex-direction:column;
+  border:1px solid rgba(255,255,255,.85);
+  box-shadow:0 22px 50px -26px rgba(32,58,78,.5);
+  transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));
+  transition:transform .55s var(--ease), box-shadow .55s var(--ease);
+}
+.hb-el:hover{box-shadow:0 40px 76px -28px rgba(32,58,78,.55)}
+.hb-el--sun{background:linear-gradient(165deg,#fffaef,#ffe9be)}
+.hb-el--sky{background:linear-gradient(165deg,#f6fbfe,#cbe5f6)}
+.hb-el--earth{background:linear-gradient(165deg,#f8fbf2,#d5eab9)}
+.hb-el h3{margin:0 0 14px; font-family:var(--serif);
+  font-size:clamp(30px,3.4vw,46px); font-weight:600; letter-spacing:.01em}
+.hb-el p{margin:0; font-size:15.5px; line-height:1.7; color:var(--hb-ink); opacity:.8}
+.hb-el .where{margin-top:22px; padding-top:18px; border-top:1px solid rgba(34,48,42,.2)}
+.hb-el .where b{display:block; font-size:9.5px; letter-spacing:.22em; text-transform:uppercase;
+  margin-bottom:8px; opacity:.6}
+.hb-el .where span{display:block; font-size:14.5px; line-height:1.68}
+
+/* --- typeface specimen --- */
+.hb-type{
+  display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);
+  gap:clamp(22px,3vw,48px); align-items:center;
+  margin-top:clamp(28px,4vh,48px); padding:clamp(28px,3.4vw,44px);
+  border-radius:20px; border:1px solid rgba(255,255,255,.85);
+  background:linear-gradient(150deg, rgba(255,255,255,.82), rgba(255,255,255,.5));
+  box-shadow:0 22px 50px -30px rgba(32,58,78,.45);
+}
+.hb-type-word{
+  display:block; font-family:var(--brand); font-weight:700;
+  font-size:clamp(34px,5.6vw,84px); line-height:1.06; letter-spacing:.005em;
+  color:var(--hb-ink);
+}
+.hb-type-set{
+  display:block; margin-top:16px; font-family:var(--brand); font-weight:600;
+  font-size:clamp(13px,1.5vw,20px); line-height:1.7; color:rgba(34,48,42,.5);
+  word-spacing:.14em;
+}
+.hb-type-meta b{
+  display:block; font-family:var(--brand); font-weight:700;
+  font-size:clamp(20px,2.2vw,30px); color:var(--hb-ink); margin-bottom:6px;
+}
+.hb-type-meta .cut{
+  display:block; font-size:10px; letter-spacing:.24em; text-transform:uppercase;
+  color:var(--hb-soft); margin-bottom:16px;
+}
+.hb-type-meta p{margin:0; font-size:14.5px; line-height:1.72; color:var(--hb-soft)}
+
+/* --- walkthroughs: numbers left, screen always right --- */
+.hb-walk{padding:clamp(50px,9vh,110px) 0}
+/* ties each set of screens back to the element it belongs to */
+.hb-walk-sub{
+  margin:16px 0 0; max-width:56ch;
+  font-size:clamp(14.5px,1.35vw,18px); line-height:1.7; color:var(--hb-soft);
+}
+.hb-walk-sub b{
+  position:relative; padding-left:20px; margin-right:2px;
+  font-weight:600; color:var(--hb-ink);
+}
+.hb-walk-sub b::before{
+  content:""; position:absolute; left:0; top:50%; margin-top:-5px;
+  width:11px; height:11px; border-radius:50%;
+  background:var(--halo, currentColor);
+  box-shadow:0 0 0 4px rgba(34,48,42,.08);
+  box-shadow:0 0 0 4px color-mix(in srgb, var(--halo, currentColor) 22%, transparent);
+}
+.hb-walk-grid{display:grid; grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);
+  gap:clamp(30px,5vw,80px); align-items:center; margin-top:clamp(34px,5vh,58px)}
+.hb-numbers{list-style:none; margin:0; padding:0}
+.hb-numbers li{border-top:1px solid var(--hb-line)}
+.hb-numbers li:first-child{border-top:none}
+.hb-numbers button{display:grid; grid-template-columns:auto 1fr; gap:20px; align-items:start;
+  width:100%; text-align:left; padding:24px 6px; transition:padding-left .4s var(--ease)}
+.hb-numbers button:hover{padding-left:12px}
+.hb-numbers .n{display:flex; align-items:center; justify-content:center;
+  width:42px; height:42px; border-radius:50%; font-size:15px; font-weight:600;
+  background:rgba(255,255,255,.72); color:var(--hb-soft); border:1px solid rgba(255,255,255,.95);
+  transition:background .4s var(--ease), color .4s var(--ease), transform .4s var(--ease), box-shadow .4s var(--ease)}
+.hb-numbers h4{margin:0 0 9px; font-family:var(--serif); font-size:clamp(21px,2.3vw,29px);
+  font-weight:600; transition:color .35s var(--ease)}
+.hb-numbers p{margin:0; font-size:clamp(15px,1.15vw,16.5px); line-height:1.75; color:var(--hb-soft);
+  max-height:0; overflow:hidden; opacity:0;
+  transition:max-height .55s var(--ease), opacity .45s var(--ease), margin-top .5s var(--ease)}
+.hb-numbers [aria-selected="true"] .n{background:var(--hb-ink); color:#fff; transform:scale(1.1);
+  box-shadow:0 12px 24px -10px rgba(34,48,42,.7)}
+.hb-numbers [aria-selected="true"] p{max-height:260px; opacity:1; margin-top:5px}
+.hb-walk-stage{position:relative; display:flex; justify-content:center; align-items:center}
+/* the glow behind each group's phone pulses in that chapter's colour */
+.hb-walk-stage .halo{
+  position:absolute; width:132%; aspect-ratio:1; border-radius:50%; pointer-events:none;
+  background:radial-gradient(circle, var(--halo, rgba(255,255,255,.9)), rgba(255,255,255,0) 64%);
+  filter:blur(26px); animation:hbPulse 3.6s ease-in-out infinite;
+}
+@keyframes hbPulse{
+  0%,100%{opacity:.52; transform:scale(.9)}
+  50%    {opacity:1;   transform:scale(1.08)}
+}
+.hb-walk-stage .hb-phone{box-shadow:
+  0 34px 64px -20px rgba(32,58,78,.4),
+  0 0 44px -6px var(--halo-cast, transparent),
+  inset 0 1px 0 #fff}
+.hb-walk-stage .hb-float{position:relative; width:clamp(190px,22vw,266px)}
+
+/* --- knowledge: centred screens, tap to reveal --- */
+.hb-screens{display:flex; flex-wrap:wrap; justify-content:center;
+  gap:clamp(26px,5vw,72px); margin:clamp(46px,7vh,80px) auto 0; max-width:860px}
+.hb-pick{position:relative; display:block; width:clamp(140px,17vw,208px);
+  transition:transform .5s var(--ease)}
+.hb-pick:hover{transform:translateY(-12px)}
+.hb-pick .tapme{display:block; margin-top:20px; text-align:center;
+  font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--hb-soft);
+  transition:color .35s var(--ease)}
+.hb-pick:hover .tapme, .hb-pick[aria-expanded="true"] .tapme{color:var(--leaf)}
+.hb-pick[aria-expanded="true"] .hb-phone{
+  box-shadow:0 0 0 3px var(--leaf-soft), 0 50px 88px -22px rgba(32,58,78,.5)}
+.hb-pop{
+  position:relative; margin:clamp(30px,4.5vh,52px) auto 0; max-width:660px; text-align:center;
+  border-radius:22px; padding:clamp(28px,3.6vw,46px);
+  background:rgba(255,255,255,.8);
+  -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,.96);
+  box-shadow:0 40px 80px -34px rgba(32,58,78,.55);
+  opacity:0; transform:translateY(20px) scale(.97); pointer-events:none;
+  transition:opacity .5s var(--ease), transform .5s var(--ease);
+}
+.hb-pop.on{opacity:1; transform:none; pointer-events:auto}
+.hb-pop h3{margin:0 0 14px; font-family:var(--serif); font-size:clamp(24px,2.8vw,36px); font-weight:600}
+.hb-pop p{margin:0 auto; max-width:56ch; font-size:15.5px; line-height:1.8; color:var(--hb-soft)}
+
+/* --- reflection --- */
+.hb-glass{
+  position:relative; overflow:hidden; border-radius:26px;
+  margin-top:clamp(40px,6vh,68px); padding:clamp(28px,4vw,60px);
+  background:rgba(255,255,255,.52);
+  -webkit-backdrop-filter:blur(20px) saturate(1.25); backdrop-filter:blur(20px) saturate(1.25);
+  border:1px solid rgba(255,255,255,.92);
+  box-shadow:0 40px 90px -40px rgba(32,58,78,.55), inset 0 1px 0 rgba(255,255,255,.95);
+}
+.hb-glass::before{content:""; position:absolute; inset:0; pointer-events:none; z-index:0;
+  background:radial-gradient(460px circle at var(--mx,50%) var(--my,20%),
+    rgba(255,255,255,.9), rgba(255,255,255,0) 62%); opacity:.75}
+.hb-glass::after{content:""; position:absolute; top:-60%; left:-30%; width:36%; height:220%;
+  pointer-events:none; z-index:0; transform:rotate(18deg);
+  background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.55), rgba(255,255,255,0));
+  animation:hbSheen 9s ease-in-out infinite}
+.hb-faq{position:relative; z-index:1}
+.hb-q{border-bottom:1px solid rgba(34,48,42,.16)}
+.hb-q:last-child{border-bottom:none}
+.hb-q > button{display:flex; align-items:center; gap:clamp(16px,2.4vw,32px); width:100%;
+  text-align:left; padding:clamp(22px,2.8vw,32px) 2px; transition:color .3s var(--ease)}
+.hb-q > button:hover{color:var(--leaf)}
+.hb-q .n{font-size:11px; letter-spacing:.2em; color:var(--hb-soft); flex:0 0 auto}
+.hb-q .q{flex:1; font-family:var(--serif); font-weight:600;
+  font-size:clamp(20px,2.6vw,34px); line-height:1.24}
+.hb-q .pm{position:relative; flex:0 0 auto; width:18px; height:18px}
+.hb-q .pm::before, .hb-q .pm::after{content:""; position:absolute; left:0; top:50%;
+  width:18px; height:1.6px; background:currentColor; transition:transform .4s var(--ease)}
+.hb-q .pm::after{transform:rotate(90deg)}
+.hb-q > button[aria-expanded="true"] .pm::after{transform:rotate(0)}
+.hb-a{overflow:hidden; max-height:0; transition:max-height .5s var(--ease)}
+.hb-a p{margin:0 0 30px; max-width:70ch; font-size:15.5px; line-height:1.82; color:var(--hb-soft)}
+
+.hb-foot{position:relative; z-index:3; text-align:center;
+  padding:clamp(60px,10vh,120px) clamp(20px,7vw,96px) clamp(90px,14vh,150px)}
+.hb-foot .thanks{margin:0 0 28px; font-family:var(--serif);
+  font-size:clamp(24px,3.4vw,44px); font-weight:600; color:var(--hb-ink)}
+.hb-back{display:inline-block; padding:15px 34px; border-radius:999px;
+  border:1px solid rgba(34,48,42,.28); color:var(--hb-ink);
+  font-size:11px; letter-spacing:.2em; text-transform:uppercase;
+  transition:background .35s var(--ease), border-color .35s var(--ease)}
+.hb-back:hover{background:rgba(255,255,255,.8); border-color:var(--hb-ink)}
+.back.on-light{background:rgba(255,255,255,.84); border-color:rgba(34,48,42,.2); color:#22302a}
+.back.on-light:hover{background:#fff; border-color:rgba(34,48,42,.45)}
+
+
+/* ============================================================
+   THE PROBLEM
+   ============================================================ */
+.hb-statement{
+  font-family:var(--serif); font-weight:600; margin:0;
+  font-size:clamp(32px,5.6vw,82px); line-height:1.06; letter-spacing:-.01em;
+  max-width:19ch; color:var(--hb-ink);
+}
+/* the phrase runs through the project's three colours. A flat fallback comes
+   first, so browsers without background-clip still get a readable line. */
+.hb-statement em{font-style:italic; color:#4f92bf}
+@supports ((-webkit-background-clip:text) or (background-clip:text)){
+  .hb-statement em{
+    display:inline-block;
+    background-image:linear-gradient(100deg, #b87e18 0%, #4f92bf 50%, #4f8a3a 100%);
+    -webkit-background-clip:text; background-clip:text;
+    color:transparent; -webkit-text-fill-color:transparent;
+    /* the clip box is only as tall as the line, so descenders on "y" and "g"
+       were being cut. the padding gives them room; the margin takes the
+       space back so the heading's rhythm is unchanged. */
+    padding-bottom:.18em; margin-bottom:-.12em;
+  }
+}
+
+.hb-cycle{
+  --cyc-gap:clamp(14px,2.2vw,30px);
+  list-style:none; margin:clamp(40px,6vh,74px) 0 0; padding:0;
+  display:grid; grid-template-columns:repeat(4,1fr); gap:var(--cyc-gap);
+}
+.hb-cycle li{
+  position:relative; padding:clamp(22px,2.6vw,32px); border-radius:16px;
+  background:rgba(255,255,255,.74); border:1px solid rgba(255,255,255,.92);
+  box-shadow:0 16px 38px -26px rgba(32,58,78,.45);
+}
+.hb-cycle li:not(:last-child)::after{
+  content:""; position:absolute; top:50%; z-index:2;
+  right:calc(var(--cyc-gap) / -2 - 5px);
+  width:10px; height:10px;
+  border-top:2px solid rgba(34,48,42,.3); border-right:2px solid rgba(34,48,42,.3);
+  transform:translateY(-50%) rotate(45deg);
+}
+.hb-cycle .n{display:block; font-size:10px; letter-spacing:.26em; color:var(--hb-soft); margin-bottom:12px}
+.hb-cycle h4{margin:0 0 8px; font-family:var(--serif); font-size:clamp(19px,2.1vw,26px); font-weight:600}
+.hb-cycle p{margin:0; font-size:14.5px; line-height:1.7; color:var(--hb-soft)}
+
+/* the loop back to the start */
+.hb-loop{position:relative; height:clamp(52px,7vh,74px); margin-top:6px}
+.hb-loop::before{
+  content:""; position:absolute; left:11%; right:11%; top:0; height:clamp(30px,4vh,42px);
+  border:2px solid rgba(34,48,42,.2); border-top:none; border-radius:0 0 20px 20px;
+}
+.hb-loop .tip{
+  position:absolute; left:11%; top:-5px; width:10px; height:10px; margin-left:-5px;
+  border-left:2px solid rgba(34,48,42,.3); border-top:2px solid rgba(34,48,42,.3);
+  transform:rotate(45deg);
+}
+.hb-loop .lbl{
+  position:absolute; left:50%; top:calc(clamp(30px,4vh,42px) - 11px); transform:translateX(-50%);
+  padding:4px 14px; border-radius:999px; background:rgba(255,255,255,.92);
+  font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--hb-soft);
+}
+
+/* ============================================================
+   WHO THIS IS FOR
+   ============================================================ */
+.hb-personas{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(258px,1fr));
+  gap:clamp(16px,2.2vw,28px); margin-top:clamp(6px,1vh,12px);
+}
+.hb-persona{
+  padding:clamp(24px,3vw,34px); border-radius:18px;
+  background:rgba(255,255,255,.76); border:1px solid rgba(255,255,255,.94);
+  box-shadow:0 18px 44px -28px rgba(32,58,78,.45);
+  transition:transform .45s var(--ease), box-shadow .45s var(--ease);
+}
+.hb-persona:hover{transform:translateY(-7px); box-shadow:0 30px 60px -28px rgba(32,58,78,.5)}
+.hb-persona .who{display:flex; align-items:center; gap:15px; margin-bottom:20px}
+.hb-avatar{
+  flex:0 0 auto; width:54px; height:54px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--serif); font-weight:600; font-size:22px; color:#fff;
+  box-shadow:0 8px 18px -8px rgba(34,48,42,.5);
+}
+.hb-persona h4{margin:0; font-family:var(--serif); font-size:clamp(20px,2vw,25px);
+  font-weight:600; line-height:1.2; color:var(--hb-ink)}
+.hb-persona .meta{display:block; margin-top:5px; font-size:10px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--hb-soft)}
+.hb-persona blockquote{
+  margin:0 0 20px; font-family:var(--serif); font-style:italic;
+  font-size:clamp(15px,1.5vw,18px); line-height:1.55; color:var(--hb-ink);
+}
+.hb-persona dl{margin:0; display:grid; gap:15px; padding-top:18px;
+  border-top:1px solid rgba(34,48,42,.14)}
+.hb-persona dt{font-size:9.5px; letter-spacing:.22em; text-transform:uppercase;
+  color:rgba(34,48,42,.45); font-weight:600}
+.hb-persona dd{margin:6px 0 0; font-size:14px; line-height:1.68; color:var(--hb-soft)}
+
+/* the caption sits above the cards, with three lines opening out toward them */
+.hb-converge{position:relative; height:clamp(64px,9vh,94px); margin-top:clamp(30px,4.5vh,52px)}
+.hb-converge .lbl{
+  position:absolute; left:50%; top:0; transform:translateX(-50%);
+  padding:4px 14px; border-radius:999px; background:rgba(255,255,255,.92);
+  font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--hb-soft);
+  white-space:nowrap;
+}
+.hb-converge i{
+  position:absolute; top:28px; left:50%; width:1.5px; height:calc(100% - 28px);
+  transform-origin:top center;
+  background:linear-gradient(to bottom, rgba(34,48,42,.3), rgba(34,48,42,0));
+}
+.hb-converge .c1{transform:rotate(-24deg)}
+.hb-converge .c2{transform:rotate(0deg)}
+.hb-converge .c3{transform:rotate(24deg)}
+
+/* ============================================================
+   RESEARCH -> DESIGN DECISION
+   ============================================================ */
+.hb-bridge{
+  list-style:none; margin:clamp(40px,6vh,70px) 0 0; padding:0;
+  border-top:1px solid var(--hb-line);
+}
+.hb-bridge li{
+  display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1.25fr);
+  gap:clamp(14px,2.6vw,40px); align-items:center;
+  padding:clamp(24px,3vw,36px) 4px; border-bottom:1px solid var(--hb-line);
+}
+.hb-bridge .from{
+  font-size:clamp(15px,1.6vw,20px); line-height:1.5; color:var(--hb-soft);
+}
+.hb-bridge .from b{display:block; font-size:9.5px; letter-spacing:.24em;
+  text-transform:uppercase; color:rgba(34,48,42,.4); margin-bottom:9px; font-weight:600}
+.hb-bridge .arw{position:relative; width:clamp(34px,5vw,76px); height:2px;
+  background:linear-gradient(90deg, rgba(34,48,42,.16), rgba(34,48,42,.42))}
+.hb-bridge .arw::after{content:""; position:absolute; right:0; top:50%; width:9px; height:9px;
+  border-top:2px solid rgba(34,48,42,.42); border-right:2px solid rgba(34,48,42,.42);
+  transform:translateY(-50%) rotate(45deg)}
+.hb-bridge .to h4{margin:0 0 8px; font-family:var(--serif); font-weight:600;
+  font-size:clamp(18px,2.2vw,28px); line-height:1.2; color:var(--hb-ink)}
+.hb-bridge .to p{margin:0; font-size:14.5px; line-height:1.7; color:var(--hb-soft); max-width:46ch}
+
+/* ============================================================
+   USER FLOW
+   ============================================================ */
+.hb-flow{margin-top:clamp(40px,6vh,70px)}
+.hb-flow-main{
+  list-style:none; margin:0; padding:0 2px 10px; display:flex;
+  gap:clamp(12px,1.8vw,26px); overflow-x:auto; scrollbar-width:thin;
+}
+.hb-fnode{flex:0 0 clamp(106px,12vw,152px); text-align:center}
+.hb-fnode .fwrap{position:relative; display:block}
+/* the arrow sits on the middle of the screen, not the middle of the card */
+.hb-fnode:not(:last-child) .fwrap::after{
+  content:""; position:absolute; top:50%; z-index:2;
+  right:calc(clamp(12px,1.8vw,26px) / -2 - 5px);
+  width:10px; height:10px;
+  border-top:2px solid rgba(34,48,42,.34); border-right:2px solid rgba(34,48,42,.34);
+  transform:translateY(-50%) rotate(45deg);
+}
+.hb-fnode h4{margin:14px 0 0; font-family:var(--serif); font-weight:600;
+  font-size:clamp(14px,1.4vw,18px); line-height:1.25; color:var(--hb-ink)}
+.hb-fnode p{margin:7px 0 0; font-size:12px; line-height:1.55; color:var(--hb-soft)}
+.hb-fnode .step{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:22px; height:22px; margin-bottom:11px; border-radius:50%;
+  background:rgba(34,48,42,.08); color:var(--hb-soft);
+  font-size:10.5px; font-weight:600;
+}
+/* the one screen everything else hangs off */
+.hb-fnode.hub .hb-frame{box-shadow:0 0 0 2px var(--sky), 0 14px 30px -20px rgba(32,58,78,.5)}
+.hb-fnode.hub .step{background:var(--sky); color:#fff}
+
+.hb-flow-alt{
+  margin-top:clamp(30px,4vh,46px); padding-top:clamp(24px,3.4vh,38px);
+  border-top:1px dashed rgba(34,48,42,.22);
+}
+.hb-flow-alt .from{
+  margin:0 0 clamp(18px,2.6vh,26px); font-size:10.5px; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--hb-soft);
+}
+.hb-flow-alt .from b{color:var(--sky-4, #3b7fa6); font-weight:600}
+.hb-flow-alt ul{list-style:none; margin:0; padding:0; display:flex;
+  gap:clamp(12px,2vw,30px); flex-wrap:wrap}
+.hb-flow-alt li{flex:0 1 clamp(98px,11vw,138px); text-align:center}
+.hb-flow-alt h4{margin:12px 0 0; font-family:var(--serif); font-weight:600;
+  font-size:clamp(13px,1.3vw,16px); color:var(--hb-ink)}
+
+/* ============================================================
+   ITERATIONS
+   ============================================================ */
+.hb-iters{display:grid; gap:clamp(18px,2.6vw,32px); margin-top:clamp(40px,6vh,70px)}
+.hb-iter{
+  padding:clamp(24px,3vw,38px); border-radius:20px;
+  background:rgba(255,255,255,.7); border:1px solid rgba(255,255,255,.92);
+  box-shadow:0 20px 46px -30px rgba(32,58,78,.45);
+}
+.hb-iter > h4{margin:0 0 clamp(20px,2.6vh,28px); font-family:var(--serif);
+  font-weight:600; font-size:clamp(20px,2.3vw,29px)}
+.hb-iter-row{display:flex; align-items:center; justify-content:center;
+  gap:clamp(16px,3vw,44px); flex-wrap:wrap}
+.hb-iter-row figure{margin:0; text-align:center; flex:0 1 clamp(130px,15vw,186px)}
+.hb-iter-row figcaption{margin-top:12px; font-size:10px; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--hb-soft)}
+.hb-frame{
+  position:relative; width:100%; aspect-ratio:var(--ios); border-radius:11% / 5.06%; overflow:hidden;
+  background:linear-gradient(to bottom, var(--sky-pale), var(--sun-pale) 54%, var(--leaf-pale));
+  border:1px solid rgba(255,255,255,.9);
+  box-shadow:0 14px 30px -20px rgba(32,58,78,.5);
+  display:flex; align-items:center; justify-content:center;
+}
+.hb-frame img{width:100%; height:100%; object-fit:cover; display:block}
+.hb-frame em{font-style:normal; font-size:9px; letter-spacing:.18em; text-transform:uppercase;
+  color:rgba(34,48,42,.38); padding:0 10px; text-align:center; line-height:1.6}
+.hb-frame.was{filter:saturate(.5) contrast(.95); opacity:.88}
+.hb-iter-arrow{position:relative; width:clamp(28px,4vw,56px); height:2px; flex:0 0 auto;
+  background:linear-gradient(90deg, rgba(34,48,42,.16), rgba(34,48,42,.4))}
+.hb-iter-arrow::after{content:""; position:absolute; right:0; top:50%; width:9px; height:9px;
+  border-top:2px solid rgba(34,48,42,.4); border-right:2px solid rgba(34,48,42,.4);
+  transform:translateY(-50%) rotate(45deg)}
+.hb-iter-note{margin:clamp(20px,2.6vh,28px) 0 0; font-size:14.5px; line-height:1.75;
+  color:var(--hb-soft); max-width:70ch}
+.hb-iter-note b{color:var(--hb-ink); font-weight:600}
+
+/* ============================================================
+   PARALLAX DRIFT
+   ============================================================ */
+.hb-sec > .hb-drift{max-width:none; margin:0}
+.hb-drift{position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden}
+.hb-sec > div{position:relative; z-index:2}
+.hb-drift span{position:absolute; will-change:transform}
+.hb-drift .cloud{border-radius:100px; background:rgba(255,255,255,.5)}
+.hb-drift .cloud::before, .hb-drift .cloud::after{
+  content:""; position:absolute; bottom:0; border-radius:50%; background:inherit;
+}
+.hb-drift .cloud::before{left:14%; width:46%; height:172%}
+.hb-drift .cloud::after{right:16%; width:34%; height:134%}
+.hb-drift .spark{border-radius:50%;
+  background:radial-gradient(closest-side circle, rgba(255,242,206,.95), rgba(255,214,120,0) 78%)}
+.hb-drift .leaf{border-radius:82% 12% 82% 12%; background:rgba(150,196,118,.4)}
+
+/* ============================================================
+   RESPONSIVE
+   Width breakpoints reflow the layout; height breakpoints keep
+   the bookcase — which is exactly one screen tall — from ever
+   needing more room than the viewport has.
+   ============================================================ */
+
+/* ---- width ---- */
+
+/* laptops: keep the case-study copy readable beside the phone cluster */
+@media (max-width:1200px){
+  .hb-hero-copy{flex:0 1 min(42%, 440px)}
+  .hb-cluster{flex:0 1 min(48%, 520px)}
+  .cs-body{padding-inline:clamp(20px,5vw,48px)}
+}
+
+/* tablets */
+@media (max-width:900px){
+  /* shelf */
+  .row.main{height:42vh}
+  .nook{width:176px}
+  .row-inner{padding:0 24px}
+  .brand{width:38px; height:38px}
+  .nav-links{gap:14px}
+  .nav-link{font-size:10px; letter-spacing:.14em}
+  .plaque{font-size:11px; letter-spacing:.16em}
+  .menu{width:min(280px, calc(100vw - 36px)); right:-8px}
+  .menu-name{font-size:14px}
+  .menu-sub{font-size:10px}
+  .cs-section{grid-template-columns:1fr; gap:14px}
+
+  /* case study: the cluster drops under the copy, still centred */
+  .hb-hero{
+    flex-direction:column; align-items:flex-start;
+    min-height:auto; padding-bottom:clamp(150px,24vh,230px);
+  }
+  .hb-hero{
+    gap:clamp(14px, 3vh, 32px);
+    padding:clamp(58px,9vh,104px) clamp(18px,5vw,44px) clamp(92px,14vh,156px);
+  }
+  .hb-hero-copy{flex:0 0 100%}
+  .hb-mark{width:clamp(56px,9vw,80px); margin-bottom:clamp(20px,3.4vh,36px)}
+  .hb-word2{font-size:clamp(34px, min(8vw, 7vh), 64px)}
+  .hb-desc{max-width:44ch; margin-top:clamp(14px,2.4vh,24px)}
+  .hb-meta{gap:16px clamp(20px,4vw,34px); margin-top:clamp(20px,3.4vh,36px)}
+  .hb-cluster{
+    flex:0 0 100%; align-self:auto;
+    /* stacked under the copy: one phone's height drives everything, and the
+       box adds the 20% step plus margin so nothing reaches an edge */
+    /* one phone's width drives the box: x2.05 for its height, x1.36 for the
+       step between the three and a margin top and bottom */
+    --pw:min(29vw, 21vh, 200px);
+    /* 2.174 for the device, 1.36 for the step between the three plus margin */
+    height:calc(var(--pw) * 2.957);
+    margin-top:clamp(28px,5vh,54px);
+  }
+  .hb-cluster .pod{width:var(--pw)}
+  .hb-walk-grid{grid-template-columns:1fr; gap:34px}
+  .hb-walk-stage .hb-float{width:min(62vw, 240px)}
+  .hb-screens{gap:clamp(20px,5vw,48px)}
+  .hb-pick{width:min(28vw, 170px)}
+
+  /* four cycle steps side by side get too narrow to read below this, so the
+     loop runs downward instead and every arrow turns with it */
+  .hb-cycle{grid-template-columns:1fr; --cyc-gap:14px}
+  .hb-cycle li:not(:last-child)::after{
+    top:auto; right:auto; left:50%; bottom:calc(var(--cyc-gap) / -2 - 5px);
+    transform:translateX(-50%) rotate(135deg);
+  }
+  .hb-loop{display:none}
+
+  /* heard -> built reads top to bottom rather than across */
+  .hb-bridge li{grid-template-columns:1fr; gap:14px}
+  .hb-bridge .arw{width:2px; height:26px; justify-self:start; margin-left:4px;
+    background:linear-gradient(180deg, rgba(34,48,42,.16), rgba(34,48,42,.42))}
+  .hb-bridge .arw::after{right:auto; left:50%; top:auto; bottom:0;
+    transform:translateX(-50%) rotate(135deg)}
+
+  .hb-personas{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+  .hb-statement{font-size:clamp(30px,6.2vw,56px)}
+  .hb-iter-row figure{flex:0 1 clamp(120px,22vw,170px)}
+  .hb-fnode{flex:0 0 clamp(96px,17vw,130px)}
+  .hb-flow-alt li{flex:0 1 clamp(90px,17vw,124px)}
+}
+
+/* phones */
+@media (max-width:620px){
+  /* shelf */
+  .hint{bottom:20px; font-size:9px; letter-spacing:.2em}
+  .rail{bottom:46px; width:min(240px, 62vw)}
+  .nook{width:158px}
+  .panel .v-copy{padding:0 clamp(8px, 2.4vw, 16px)}
+  .panel-hero .v-scroll{--sh:clamp(48px, 9vh, 92px)}
+  .panel-sec  .v-scroll{--sh:clamp(62px, 13vh, 140px)}
+  .brand{width:34px; height:34px}
+  .brand-bubble{width:min(270px, calc(100vw - 28px)); padding:16px 17px 14px}
+  .nav{padding:0 14px}
+  .nav-links{gap:11px}
+  .nav-link{font-size:9.5px; letter-spacing:.1em}
+  .menu{width:min(260px, calc(100vw - 28px))}
+
+  /* case study */
+  .hb-sec{padding:clamp(56px,10vh,96px) 20px}
+  .hb-cluster{--pw:min(28vw, 19vh, 180px)}
+  .hb-tabs button{padding:11px 16px; font-size:11px; letter-spacing:.1em}
+  .hb-row{padding:22px 20px}
+  .hb-intro{padding:clamp(48px,8vh,90px) 16px}
+  .hb-intro-card{padding:clamp(40px,8vh,72px) 20px; border-radius:22px}
+  .hb-glass{padding:24px 20px; border-radius:20px}
+  .hb-screens{gap:18px}
+  .hb-pick{width:min(40vw, 168px)}
+  .hb-numbers button{gap:14px}
+  .hb-numbers .n{width:32px; height:32px; font-size:13px}
+  .cs-body{padding-inline:20px}
+  /* before and after stack, so neither frame is squeezed */
+  .hb-iter-row{flex-direction:column; gap:14px}
+  .hb-iter-row figure{flex:0 1 auto; width:min(58vw, 190px)}
+  .hb-iter-arrow{width:2px; height:26px;
+    background:linear-gradient(180deg, rgba(34,48,42,.16), rgba(34,48,42,.4))}
+  .hb-iter-arrow::after{right:auto; left:50%; top:auto; bottom:0;
+    transform:translateX(-50%) rotate(135deg)}
+}
+
+/* very narrow */
+@media (max-width:400px){
+  .nook{width:142px}
+  .hb-personas{grid-template-columns:1fr}
+  .hb-persona .who{gap:12px}
+  .hb-avatar{width:46px; height:46px; font-size:19px}
+  .hb-cycle li{padding:20px}
+  .hb-iter{padding:20px}
+  .hb-iter-row figure{width:min(70vw, 180px)}
+  .hb-cluster{--pw:min(27vw, 18vh, 160px)}
+  .hb-trio, .hb-cards{grid-template-columns:1fr}
+  .hb-meta{gap:13px 18px}
+  .hb-meta dt{letter-spacing:.18em}
+  .hb-desc{max-width:100%}
+  .hb-hero{padding-bottom:clamp(74px,12vh,120px)}
+  .hb-screens{flex-direction:column; align-items:center}
+  .hb-pick{width:min(58vw, 200px)}
+}
+
+/* ---- height ----
+   the bookcase is one screen tall, so its rows step down rather
+   than overflow as vertical room disappears */
+/* wide but short: the row layout stays, so the phones take their cue from
+   the height that is actually left between the padding */
+@media (max-height:640px){
+  .hb-cluster .pod{width:min(32%, 17vh, 210px)}
+}
+@media (max-height:720px){
+  .plaque{font-size:11px; padding:5px 6px}
+  .nook-frame{padding-bottom:34px}
+  .nook-arch{inset:12px 14px 34px}
+  .nook-caption{bottom:34px}
+  .row.upper, .row.lower{min-height:84px}
+  .row.main{min-height:210px}
+}
+@media (max-height:600px){
+  .panel-hero .v-scroll{--sh:clamp(40px, 8vh, 74px)}
+  .panel-sec  .v-scroll{--sh:clamp(52px, 12vh, 108px)}
+  .row.upper, .row.lower{min-height:60px}
+  .row.main{height:46vh; min-height:170px}
+  .board{min-height:11px}
+  .board.thick{min-height:13px}
+  .nook{width:168px}
+  .plaque{font-size:10px; letter-spacing:.14em; padding:4px 5px; bottom:7px}
+  .nook-frame{padding:9px 11px 28px}
+  .nook-arch{inset:9px 11px 28px; border-radius:56px 56px 4px 4px}
+  .nook-caption{bottom:28px; padding:20px 8px 8px}
+  .rail{bottom:40px}
+  .hint{bottom:14px}
+}
+/* landscape phones: almost no vertical room at all */
+@media (max-height:460px){
+  /* landscape phones: let the hero be as tall as its contents need */
+  .hb-hero{
+    min-height:auto;
+    padding:clamp(38px,8vh,64px) clamp(18px,5vw,44px) clamp(56px,11vh,96px);
+  }
+  .hb-mark{margin-bottom:clamp(14px,3vh,24px)}
+  .panel-hero .v-scroll, .panel-sec .v-scroll{--sh:clamp(34px, 11vh, 62px)}
+  .row.upper, .row.lower{min-height:0; flex:1}
+  .row.main{height:52vh; min-height:130px}
+  .nook{width:132px}
+  .nook-frame{padding:7px 8px 22px}
+  .nook-arch{inset:7px 8px 22px; border-radius:40px 40px 3px 3px}
+  .nook-caption{display:none}
+  .plaque{font-size:9px; bottom:5px; padding:3px 4px}
+  .display{font-size:clamp(20px,2.2vw,30px)}
+  .lede{display:none}
+  .hb-cluster{--pw:min(22vw, 32vh, 200px)}
+}
+
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration:.001ms !important; animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="brand-wrap">
+    <button class="brand" id="avatar" aria-label="Janet Marlowe — say hello"
+            aria-expanded="false" aria-controls="brandBubble">
+      <span class="avatar-ph" aria-hidden="true"></span>
+    </button>
+    <div class="brand-bubble" id="brandBubble" role="dialog" aria-label="About Janet" hidden>
+      <span class="sig">Currently on my nightstand</span>
+      <p><em>Piranesi</em> by Susanna Clarke. It's about someone who lives inside
+         a house of endless halls and catalogues every room with total devotion.
+         I think about it whenever a project starts feeling too big to map.</p>
+    </div>
+  </div>
+  <nav class="nav-links" aria-label="Sections of the bookshelf">
+    <div class="nav-item">
+      <button class="nav-link" id="workBtn" aria-haspopup="true" aria-expanded="false" aria-controls="workMenu">
+        Work <span class="caret" aria-hidden="true"></span>
+      </button>
+      <div class="menu" id="workMenu" role="menu" aria-label="Jump to a project" hidden></div>
+    </div>
+    <button class="nav-link" data-go="about">About</button>
+    <button class="nav-link" data-go="resume">Résumé</button>
+    <button class="nav-link" data-go="contact">Contact</button>
+  </nav>
+</header>
+
+<main id="stage" aria-label="Interactive bookshelf. Use arrow keys or drag to explore.">
+  <div class="layer" id="wall" aria-hidden="true"></div>
+  <div class="layer" id="track">
+    <div class="case" id="case">
+      <div class="row deco upper" id="rowUpperWrap" aria-hidden="true"><div class="row-inner" id="rowUpper"></div></div>
+      <div class="board" id="boardA" aria-hidden="true"></div>
+      <div class="row main" id="rowMainWrap"><div class="row-inner" id="rowMain"></div></div>
+      <div class="board thick" id="boardB" aria-hidden="true"></div>
+      <div class="row deco lower" aria-hidden="true"><div class="row-inner" id="rowLower"></div></div>
+    </div>
+  </div>
+  <div class="layer" id="fore" aria-hidden="true"></div>
+</main>
+
+<div id="topFade" aria-hidden="true"></div>
+
+<p class="hint" id="hint"><i aria-hidden="true"></i>scroll to walk the shelf<span>or drag</span></p>
+
+<div class="rail" id="rail" role="group" aria-label="Position along the shelf">
+  <div class="rail-track"></div>
+  <div class="rail-thumb" id="railThumb"></div>
+</div>
+
+<button class="back" type="button" id="backBtn" hidden>← Back to shelf</button>
+<section id="overlay" hidden aria-modal="true" role="dialog" aria-labelledby="csTitle"></section>
+
+<script>
+(function(){
+"use strict";
+
+const REDUCE = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---- PROFILE PHOTO -------------------------------------------------------
+   Put your picture here — a file path ("me.jpg"), a full URL, or a data URI.
+   Leave it empty and the avatar shows a placeholder silhouette instead.
+   A square image works best; it is cropped to a circle.                     */
+const AVATAR_SRC = "";
+if (AVATAR_SRC){
+  const av = document.getElementById("avatar");
+  av.style.backgroundImage = "url('" + AVATAR_SRC + "')";
+  av.classList.add("has-photo");
+}
+
+/* ---- NOOK ARTWORK --------------------------------------------------------
+   Put an image path or URL against a project and it replaces that nook's
+   CSS scene entirely — no other changes needed.
+
+     nook  the picture inside the shelf opening. Tall and narrow (roughly
+           2:5). This is the one that matters most.
+     hero  the wide banner at the top of that project's case study. Leave it
+           empty and the nook image is used there too.
+     pos   optional framing, same syntax as CSS object-position, e.g.
+           "center", "50% 30%", "top". Handy when a cover crop cuts off
+           the part you care about.
+
+   Anything left empty keeps the built-in CSS scene. If a file is missing or
+   fails to load, the CSS scene comes back automatically, so a broken path
+   never leaves an empty hole in the shelf.                                  */
+const ART = {
+  hydrabloom: {nook:"", hero:"", pos:"center"},
+  lantern:    {nook:"", hero:"", pos:"center"}
+};
+
+function artMarkup(src, pos){
+  return '<div class="scene sc-art">'
+       + '<img class="art-img" src="' + src + '" alt="" aria-hidden="true"'
+       + (pos ? ' style="--art-pos:' + pos + '"' : '') + '>'
+       + '</div>';
+}
+
+/* the picture for a project, falling back through hero -> nook -> CSS scene */
+function sceneMarkup(id, which){
+  const a = ART[id] || {};
+  const src = which === "hero" ? (a.hero || a.nook) : a.nook;
+  return src ? artMarkup(src, a.pos) : SCENES[PROJECTS[id].scene]();
+}
+
+/* if the file is missing, quietly put the CSS scene back */
+function wireArt(root, id){
+  root.querySelectorAll(".art-img").forEach(function(img){
+    img.addEventListener("error", function(){
+      const host = img.closest(".scene");
+      if (host) host.outerHTML = SCENES[PROJECTS[id].scene]();
+    });
+  });
+}
+
+/* ============================================================
+   0 — DATA
+   ============================================================ */
+const PROJECTS = {
+  hydrabloom: {
+    name:"HydraBloom", sub:"Making hydration feel rewarding.",
+    kicker:"Product design · Habit app", scene:"bloom",
+    meta:[["Role","Product Designer"],["Timeline","8 weeks"],["Platform","iOS"],["Year","2026"]],
+    sections:[
+      ["Overview","HydraBloom turns a dull daily target into a garden that visibly responds to care. Drink water, something grows.","Placeholder copy. Replace with the real project framing."],
+      ["Problem","Hydration reminders nag. Nagging gets muted, then deleted.","Placeholder copy on why streak-and-guilt mechanics fail for low-stakes habits."],
+      ["Research","Placeholder copy summarising diary studies and habit-app teardowns.",""],
+      ["Design process","Placeholder copy on growth systems, plant states, and how failure should feel.","A wilted plant recovers. Nothing in the system is ever permanently lost."],
+      ["Solution","Placeholder copy describing logging, the garden, and gentle nudges.",""],
+      ["Outcome","Placeholder copy for results and next steps.",""]
+    ]
+  },
+  lantern: {
+    name:"Lantern", sub:"Career guidance for those finding their way.",
+    kicker:"Product design · Mobile app", scene:"lantern",
+    meta:[["Role","Product Designer"],["Timeline","12 weeks"],["Platform","iOS · Android"],["Year","2026"]],
+    sections:[
+      ["Overview","Lantern is a career companion for people who haven't figured it all out yet. The premise: you don't need to see the whole road — only enough light to take the next step.","Placeholder copy. Replace with the real framing, scope, and your role."],
+      ["Problem","Career tools assume you already know the destination. Everyone else gets a search box and a shrug.","Placeholder copy describing the gap and why existing products miss it."],
+      ["Research","Placeholder copy summarising interviews, surveys, and competitive review.","What surfaced: people wanted permission to be uncertain more than another list of job titles."],
+      ["Design process","Placeholder copy covering explorations, flows, and the ideas that were cut.","The lantern ceremony emerged here — a small ritual that marks a chapter instead of a task."],
+      ["Solution","Placeholder copy walking through the shipped experience, screen by screen.","Each lantern holds one hope from one moment. They collect into a sky you can look back at."],
+      ["Outcome","Placeholder copy for results, metrics, and what you'd do differently.",""]
+    ]
+  }
+};
+
+/* the running order of projects along the shelf — used by the jump menu,
+   the position rail, and the Work nav item, so adding a project to PROJECTS
+   and to this list is all it takes */
+const ORDER = ["hydrabloom", "lantern"];
+
+/* spine colourways — base, highlight, shadow, material, accent */
+const P = {
+  oxblood:  {c:"#6a2f34", l:"#a05056", d:"#22090c", m:"leather"},
+  chestnut: {c:"#6b4222", l:"#a56a38", d:"#201206", m:"leather"},
+  bottle:   {c:"#2e4a3a", l:"#4f7660", d:"#0d1710", m:"leather"},
+  midnight: {c:"#293857", l:"#455f8c", d:"#0b1018", m:"leather"},
+  tan:      {c:"#8d6d3c", l:"#c8a266", d:"#33240f", m:"leather"},
+  slate:    {c:"#3f4750", l:"#6a737f", d:"#141719", m:"cloth"},
+  moss:     {c:"#485636", l:"#6f8452", d:"#171d10", m:"cloth"},
+  dust:     {c:"#8a7c60", l:"#b4a888", d:"#332d21", m:"cloth"},
+  plum:     {c:"#4c2f41", l:"#764a64", d:"#180d16", m:"cloth"},
+  teal:     {c:"#2a4e4e", l:"#487676", d:"#0d1a1a", m:"cloth"},
+  ochre:    {c:"#9a7126", l:"#d0a044", d:"#3a2708", m:"cloth"},
+  linen:    {c:"#b8a884", l:"#ddceac", d:"#514736", m:"paper"},
+  ivory:    {c:"#d0c3a5", l:"#efe4c8", d:"#68604c", m:"paper"},
+  brick:    {c:"#9a4b34", l:"#c26c4c", d:"#3b1810", m:"paper"},
+  ice:      {c:"#9aafba", l:"#c3d3d9", d:"#414d55", m:"paper"}
+};
+
+/* seeded rng — the shelf is identical on every load */
+function rngFactory(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const rand = rngFactory(70413);
+const pick = a => a[Math.floor(rand()*a.length)];
+const between = (a,b) => a + rand()*(b-a);
+const ri = (a,b) => Math.round(between(a,b));
+const r2 = n => Math.round(n*100)/100;
+
+/* ============================================================
+   1 — BOOK CONSTRUCTION
+   ============================================================ */
+/* the upper and lower rows are blurred and dimmed, so they get plain spines —
+   full texture there would cost thousands of nodes nobody can see */
+let simpleMode = false;
+
+/* raised hubs are the loudest treatment on the shelf, so only a handful of
+   volumes get them. everything else carries gilt rules, a pasted label,
+   or nothing at all beyond the material itself. */
+let bandsBudget = 9;
+
+/* the top shelf runs off the frame, so its volumes are oversized — their heads
+   are cut by the edge the way the bottom shelf's tails are */
+let heightScale = 1;
+
+function makeBook(o){
+  o = o || {};
+  const col = o.col || P[pick(Object.keys(P))];
+  const w = o.w || ri(15,36);
+  const h = r2((o.h || ri(58,92)) * heightScale);
+  const el = document.createElement("div");
+  el.className = "book m-" + col.m;
+  el.style.width = r2(w * (heightScale > 1 ? 1.22 : 1)) + "px";
+  el.style.height = h + "%";
+  el.style.setProperty("--c", col.c);
+  el.style.setProperty("--l", col.l);
+  el.style.setProperty("--d", col.d);
+  if (o.depth === "fwd") el.classList.add("fwd");
+  if (o.depth === "bck") el.classList.add("bck");
+  if (o.tilt){
+    /* tips to the right, off its own bottom-left corner; fixLeans() reserves
+       the horizontal sweep as margin so it never crosses its neighbour */
+    el.classList.add("lean");
+    el.dataset.tilt = o.tilt;
+    el.dataset.h = h;
+    el.style.transform = "rotate(" + o.tilt + "deg)";
+  }
+  if (simpleMode) return el;
+
+  /* not every binding is coarse — about a third are smooth, a third lightly
+     grained, a third full material texture */
+  const finish = o.finish || (rand() < .34 ? "none" : (rand() < .5 ? "soft" : "full"));
+  let out = finish === "none" ? "" :
+    '<span class="grain' + (finish === "soft" ? " soft" : "") + '"></span>';
+
+  let style = o.style || "plain";
+  if (style === "bands"){
+    if (bandsBudget > 0) bandsBudget--;
+    else style = rand() < .5 ? "gilt" : "plain";
+  }
+
+  if (style === "bands"){
+    const n = ri(3,5), top = 12, span = 74, pitch = span/(n-1);
+    for (let i=0;i<n;i++) out += '<span class="band" style="top:' + r2(top + pitch*i) + '%"></span>';
+  } else if (style === "gilt"){
+    /* two fine rules at the head, two at the tail */
+    out += '<span class="rule" style="top:11%"></span><span class="rule" style="top:13.5%"></span>'
+         + '<span class="rule" style="bottom:11%"></span><span class="rule" style="bottom:13.5%"></span>';
+  }
+
+  if (finish !== "none" && col.m !== "paper" && rand() < .3){
+    for (let i=0;i<ri(2,5);i++){
+      const sz = between(1.5,3.5);
+      out += '<span class="fox" style="left:' + r2(between(8,80)) + '%;top:' + r2(between(6,92)) + '%;'
+           + 'width:' + r2(sz) + 'px;height:' + r2(sz) + 'px"></span>';
+    }
+  }
+  out += '<span class="wear"></span>';
+  el.innerHTML = out;
+  return el;
+}
+
+function makeStack(o){
+  o = o || {};
+  const el = document.createElement("div");
+  el.className = "stack";
+  const n = o.n || ri(3,6);
+  const k = heightScale > 1 ? 1.22 : 1;
+  const base = (o.w || ri(58,86)) * k;
+  for (let i=0;i<n;i++){
+    const col = P[pick(Object.keys(P))];
+    const b = document.createElement("i");
+    b.style.height = r2(ri(9,15) * k) + "px";
+    b.style.width = r2(Math.max(38, base - i*ri(0,7))) + "px";
+    b.style.marginLeft = ri(0,9) + "px";
+    b.style.background = "linear-gradient(90deg," + col.d + "," + col.c + " 22%," + col.l + " 55%," + col.d + ")";
+    el.appendChild(b);
+  }
+  el.style.width = r2(base + 10) + "px";
+  return el;
+}
+
+function spacer(w){ const d = document.createElement("div"); d.className = "gap"; d.style.width = w + "px"; return d; }
+
+/* ============================================================
+   2 — SHELF RUNS (hand-composed, not generated)
+   Each entry is a real arrangement you'd find on a used shelf.
+   ============================================================ */
+const RUNS = {
+  /* a matched multi-volume set — same binding, same height, one pulled proud */
+  set: function(host, n, key){
+    const col = P[key || pick(["oxblood","bottle","midnight","chestnut","tan"])];
+    const w = ri(19,25), h = ri(76,88);
+    const proud = ri(0, n-1);
+    const style = rand() < .3 ? "bands" : "gilt";
+    for (let i=0;i<n;i++){
+      host.appendChild(makeBook({col, w, h: h + (i === n-1 ? -2 : 0), style,
+        depth: i === proud ? "fwd" : null}));
+    }
+  },
+  /* mismatched clutter, occasionally with one volume tipped over */
+  jumble: function(host, n){
+    for (let i=0;i<n;i++){
+      const lean = (i === n-2) && rand() < .4;
+      host.appendChild(makeBook({
+        w: ri(14,34), h: ri(58,88),
+        style: pick(["plain","plain","gilt","plain","gilt","plain","plain"]),
+        tilt: lean ? ri(5,9) : 0,
+        depth: rand() < .18 ? (rand() < .5 ? "fwd" : "bck") : null
+      }));
+    }
+  },
+  /* a run of tall thin folios, standing straight and tightly packed */
+  folios: function(host, n){
+    for (let i=0;i<n;i++){
+      host.appendChild(makeBook({
+        col:P[pick(["dust","linen","slate","teal"])],
+        w: ri(11,18), h: ri(86,96), style: rand() < .5 ? "gilt" : "plain",
+        finish: rand() < .5 ? "none" : "soft"
+      }));
+    }
+  },
+  /* short, pale, smooth-bound volumes */
+  paperbacks: function(host, n){
+    for (let i=0;i<n;i++){
+      host.appendChild(makeBook({
+        col:P[pick(["ivory","linen","brick","ice","dust"])],
+        w: ri(9,17), h: ri(54,70), style:"plain",
+        finish: rand() < .6 ? "none" : "soft"
+      }));
+    }
+  },
+  /* a gap where something was taken out — the survivor leans into the space */
+  breach: function(host){
+    host.appendChild(makeBook({w:ri(20,28), h:ri(70,84), style:"bands", tilt:ri(7,11)}));
+    host.appendChild(spacer(ri(12,24)));
+    host.appendChild(makeBook({w:ri(16,24), h:ri(64,80), style:"plain", depth:"bck"}));
+  },
+  /* books laid flat */
+  flat: function(host){
+    host.appendChild(makeStack({n:ri(3,6)}));
+  },
+  /* two heavy folios pressed together, pushed to the back */
+  pressed: function(host){
+    const col = P[pick(["chestnut","oxblood","tan"])];
+    host.appendChild(makeBook({col, w:ri(30,40), h:ri(84,94), style:"bands", depth:"bck"}));
+    host.appendChild(makeBook({col, w:ri(26,36), h:ri(80,90), style:"gilt", depth:"bck"}));
+  },
+  /* one book pulled forward, alone, like it's mid-read */
+  proud: function(host){
+    host.appendChild(makeBook({w:ri(22,30), h:ri(72,86), style:"gilt", depth:"fwd"}));
+  }
+};
+
+/* the sequences below are written out deliberately so the rhythm reads
+   as arrangement rather than output. gaps are irregular on purpose. */
+const SEQ_A = [["jumble",5],["flat"],["set",4],["gap",9],["folios",3],["paperbacks",4],
+               ["breach"],["jumble",4],["pressed"],["gap",5],["paperbacks",3],["proud"],["jumble",3]];
+const SEQ_B = [["gap",7],["set",6,"bottle"],["jumble",4],["breach"],["flat"],["paperbacks",5],
+               ["gap",11],["folios",4],["jumble",6],["pressed"],["paperbacks",3],["gap",6],
+               ["set",3,"tan"],["jumble",5],["proud"],["flat"],["jumble",4]];
+const SEQ_C = [["jumble",4],["paperbacks",4],["gap",8],["set",5,"midnight"],["breach"],
+               ["folios",3],["flat"],["jumble",5],["pressed"],["gap",5],["paperbacks",4],["jumble",3]];
+const SEQ_D = [["folios",4],["jumble",5],["flat"],["gap",10],["set",4,"oxblood"],["paperbacks",3],
+               ["breach"],["jumble",4],["proud"],["pressed"],["jumble",5],["paperbacks",4],["flat"]];
+const SEQ_E = [["jumble",4],["set",3,"chestnut"],["gap",7],["paperbacks",4],["flat"],["folios",3],
+               ["jumble",5],["breach"],["pressed"],["jumble",4]];
+
+function runSeq(host, seq){
+  seq.forEach(function(step){
+    if (step[0] === "gap"){ host.appendChild(spacer(step[1])); return; }
+    RUNS[step[0]](host, step[1], step[2]);
+  });
+}
+
+/* ============================================================
+   3 — NOOK SCENES
+   ============================================================ */
+const BLOSSOMS = ["#f5c7da","#ffffff","#e2c3ec","#f9dce7","#ffe9c9"];
+const FLOWERS = ["#f3aac5","#ffffff","#f6d477","#dcb6e8","#ffc9b0","#f78fae"];
+
+function bloomScene(){
+  return '<div class="scene sc-flow">'
+       + '<span class="flow-a"></span>'
+       + '<span class="flow-b"></span>'
+       + '<span class="flow-c"></span>'
+       + '<span class="flow-sheen"></span>'
+       + '</div>';
+}
+
+function lanternScene(){
+  return '<div class="scene sc-ember">'
+       + '<span class="flow-a"></span>'
+       + '<span class="flow-b"></span>'
+       + '<span class="flow-sheen"></span>'
+       + '</div>';
+}
+
+const SCENES = {lantern:lanternScene, bloom:bloomScene};
+/* the colour each opening throws onto the shelf around it */
+const NOOK_GLOW = {
+  lantern:"rgba(255,146,62,.6)",
+  bloom:"rgba(196,226,168,.55)"
+};
+const SPILLS = {
+  lantern:"radial-gradient(ellipse 36% 60% at 50% 54%, rgba(255,152,64,.4), rgba(212,85,47,.14) 42%, rgba(200,70,40,0) 72%)",
+  bloom:"radial-gradient(ellipse 36% 60% at 50% 54%, rgba(226,244,206,.3), rgba(198,228,180,.1) 44%, rgba(190,225,175,0) 72%)"
+};
+
+function nook(id, anchor){
+  const p = PROJECTS[id];
+  const el = document.createElement("button");
+  el.className = "nook";
+  el.type = "button";
+  el.dataset.project = id;
+  el.dataset.anchor = anchor;
+  el.setAttribute("aria-label", "Open case study: " + p.name + ". " + p.sub);
+  el.style.setProperty("--nook-glow", NOOK_GLOW[p.scene] || NOOK_GLOW.lantern);
+  el.innerHTML =
+    '<div class="nook-frame" aria-hidden="true"><span class="nook-mitre"></span></div>' +
+    /* scene sits at the back of the box; the walls, floor and ceiling are laid
+       over its edges so the opening reads as something you look into */
+    '<div class="nook-arch" aria-hidden="true">' + sceneMarkup(id, "nook") +
+      '<span class="nook-portal"></span>' +
+      '<span class="nook-lip"></span>' +
+    '</div>' +
+    '<div class="nook-caption" aria-hidden="true"><span class="n-cta">View project →</span></div>' +
+    '<div class="spill" aria-hidden="true" style="background:' + SPILLS[p.scene] + '"></div>' +
+    '<span class="plaque" aria-hidden="true">' + p.name + '</span>';
+  wireArt(el, id);
+  return el;
+}
+
+/* text panels reserve their space with a slot in the shelf, then render
+   full-height over the whole case so the type dominates the view */
+const PANELS = {
+  home: {cls:"panel-hero", html:
+    '<p class="eyebrow">Portfolio · 2026</p>' +
+    '<h1 class="display">Janet<br><em>Marlowe</em></h1>' +
+    '<div class="v-scroll-wrap"><div class="v-scroll" tabindex="0">' +
+      '<p class="lede">Product Designer creating thoughtful digital experiences. ' +
+      'Each project is a small world set between the books.</p>' +
+    '</div><button class="scroll-hint" type="button" aria-label="Show more text">' +
+      'scroll<i aria-hidden="true"></i></button></div>' +
+    '<button class="inline-cta" data-browse>Explore my work →</button>'},
+  about: {cls:"panel-sec", html:
+    '<p class="eyebrow">About</p>' +
+    '<h2 class="display">About<br><em>Janet</em></h2>' +
+    '<div class="v-scroll-wrap"><div class="v-scroll" tabindex="0">' +
+      '<p class="lede">I\'m a Product Designer interested in creating thoughtful, ' +
+      'human-centered digital experiences — the kind people can find their way ' +
+      'through without being told how.</p>' +
+      '<p class="lede">Placeholder paragraph about background and approach. ' +
+      'Keep adding as much as you like; this box stays the same size and the ' +
+      'reader scrolls through it.</p>' +
+    '</div><button class="scroll-hint arrow-only" type="button" aria-label="Show more text">' +
+      '<i aria-hidden="true"></i></button></div>'},
+  contact: {cls:"panel-sec", html:
+    '<p class="eyebrow">Contact</p>' +
+    '<h2 class="display">Let\'s create<br>something <em>thoughtful.</em></h2>' +
+    '<div class="contact-links">' +
+      '<a href="mailto:hello@example.com">Email</a>' +
+      '<a href="https://www.linkedin.com" target="_blank" rel="noopener">LinkedIn</a>' +
+      '<a href="https://app.joinhandshake.com" target="_blank" rel="noopener">Handshake</a>' +
+    '</div>'}
+};
+function slot(width, key){
+  const d = document.createElement("div");
+  d.className = "gap";
+  d.style.width = width + "px";
+  d.dataset.anchor = key;
+  d.dataset.slot = key;
+  return d;
+}
+
+/* ============================================================
+   4 — COMPOSE
+   ============================================================ */
+const rowMain = document.getElementById("rowMain");
+const A = n => rowMain.appendChild(n);
+
+RUNS.jumble(rowMain, 3);
+RUNS.set(rowMain, 4, "midnight");
+RUNS.paperbacks(rowMain, 4);
+A(slot(Math.round(Math.min(1080, Math.max(300, window.innerWidth * .56))), "home"));
+runSeq(rowMain, SEQ_A);
+A(spacer(20));
+A(nook("hydrabloom", "hydrabloom"));
+A(spacer(20));
+runSeq(rowMain, SEQ_B);
+runSeq(rowMain, SEQ_E);
+A(spacer(20));
+A(nook("lantern", "lantern"));
+A(spacer(20));
+runSeq(rowMain, SEQ_C);
+A(slot(Math.round(Math.min(940, Math.max(280, window.innerWidth * .49))), "about"));
+runSeq(rowMain, SEQ_D);
+runSeq(rowMain, SEQ_A);
+A(slot(Math.round(Math.min(860, Math.max(265, window.innerWidth * .45))), "contact"));
+/* enough shelf past Contact that the view can still bring it to the middle
+   on a wide screen, instead of running out of track and stopping short */
+runSeq(rowMain, SEQ_E);
+runSeq(rowMain, SEQ_B);
+
+/* ============================================================
+   5 — MEASURE + DECORATE
+   ============================================================ */
+const stage = document.getElementById("stage");
+const track = document.getElementById("track");
+const caseEl = document.getElementById("case");
+const rail = document.getElementById("rail");
+const railThumb = document.getElementById("railThumb");
+const hint = document.getElementById("hint");
+const fore = document.getElementById("fore");
+const wall = document.getElementById("wall");
+
+let W = 0, maxX = 0, vw = window.innerWidth, decorated = false;
+const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+
+/* a tipped book sweeps h*sin(theta) sideways at its head. reserve exactly that
+   much margin so it leans into empty air instead of across its neighbour. */
+function fixLeans(){
+  document.querySelectorAll(".book.lean").forEach(function(b){
+    const row = b.closest(".row");
+    const rowH = row ? row.getBoundingClientRect().height : 0;
+    if (!rowH) return;
+    const tilt = Math.abs(parseFloat(b.dataset.tilt) || 0);
+    const hpx = rowH * (parseFloat(b.dataset.h) || 0) / 100;
+    b.style.marginRight = Math.ceil(hpx * Math.sin(tilt * Math.PI/180) + 3) + "px";
+  });
+}
+
+function measureMainWidth(){
+  const kids = rowMain.children;
+  if (!kids.length) return 0;
+  const cs = getComputedStyle(rowMain);
+  const pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+  const first = kids[0].getBoundingClientRect();
+  const last = kids[kids.length-1].getBoundingClientRect();
+  return Math.ceil((last.right - first.left) + pad);
+}
+
+function fillDeco(node, targetW, scale){
+  const seqs = [SEQ_A, SEQ_B, SEQ_C, SEQ_D, SEQ_E];
+  simpleMode = true;
+  heightScale = scale || 1;
+  let i = 0;
+  while (node.scrollWidth < targetW + 400 && i < 40){
+    runSeq(node, seqs[(i + (node.id === "rowLower" ? 2 : 0)) % seqs.length]);
+    i++;
+  }
+  heightScale = 1;
+  simpleMode = false;
+}
+
+function fairyLights(host, width, o){
+  o = o || {};
+  const seg = o.seg || 158, sag = o.sag || 28, top = o.top || 4;
+  const wrap = document.createElement("div");
+  wrap.className = "lights";
+  wrap.style.width = width + "px";
+  let d = "M0," + top;
+  const bulbs = [];
+  for (let x=0; x<width; x+=seg){
+    const x2 = Math.min(x+seg, width), span = x2 - x;
+    d += " Q" + r2((x+x2)/2) + "," + r2(top+sag) + " " + r2(x2) + "," + top;
+    [.28,.5,.72].forEach(function(t){ bulbs.push({x:x + span*t, y: top + 2*(1-t)*t*sag}); });
+    bulbs.push({x:x2, y:top});
+  }
+  let h = '<svg width="' + width + '" height="' + (top+sag+6) + '" aria-hidden="true">'
+        + '<path d="' + d + '" fill="none" stroke="rgba(88,68,42,.75)" stroke-width="1"/></svg>';
+  bulbs.forEach(function(b,i){
+    const big = i % 3 === 0;
+    h += '<span class="bulb' + (big ? " big" : "") + '" style="left:' + r2(b.x) + 'px;top:' + r2(b.y) + 'px;'
+       + (big ? 'animation-delay:' + r2((i*0.41) % 5) + 's' : '') + '"></span>';
+  });
+  wrap.innerHTML = h;
+  host.appendChild(wrap);
+}
+
+function addKnots(board, width){
+  for (let x = between(160, 700); x < width - 100; x += between(620, 1500)){
+    const k = document.createElement("span");
+    k.className = "knot";
+    const w = between(14, 34);
+    k.style.left = r2(x) + "px";
+    k.style.width = r2(w) + "px";
+    k.style.height = r2(w * between(.3,.55)) + "px";
+    k.style.top = r2(between(12, 48)) + "%";
+    board.appendChild(k);
+  }
+}
+
+const panelEls = [];
+
+/* The panels span the whole case, but the copy inside is nudged onto the centre
+   line of the main shelf and, if it is still taller than the cavity, scaled down
+   until it fits — so the type never crosses the boards above or below it. */
+function centrePanelCopy(){
+  const caseR = caseEl.getBoundingClientRect();
+  const mainR = document.getElementById("rowMainWrap").getBoundingClientRect();
+  const panelCentre = caseR.height / 2;
+  const mainCentre = (mainR.top - caseR.top) + mainR.height / 2;
+  const shift = r2(mainCentre - panelCentre);
+  /* leave a little air so descenders never touch the shelf edge */
+  const avail = Math.max(80, mainR.height - 34);
+
+  /* the slanted note appears only when the box actually overflows, and
+     retires once the reader reaches the end */
+  panelEls.forEach(function(p){
+    p.querySelectorAll(".v-scroll-wrap").forEach(function(wrap){
+      const box = wrap.querySelector(".v-scroll");
+      if (!box) return;
+      const more = box.scrollHeight > box.clientHeight + 4;
+      wrap.classList.toggle("can-scroll", more);
+      if (!box.dataset.wired){
+        box.dataset.wired = "1";
+        box.addEventListener("scroll", function(){
+          const end = box.scrollTop + box.clientHeight >= box.scrollHeight - 6;
+          wrap.classList.toggle("at-end", end);
+        }, {passive:true});
+
+        /* the arrow advances a screenful, and returns to the top once there
+           is nothing left below */
+        const more = wrap.querySelector(".scroll-hint");
+        if (more){
+          more.addEventListener("click", function(e){
+            e.stopPropagation();
+            const end = box.scrollTop + box.clientHeight >= box.scrollHeight - 6;
+            box.scrollTo({top: end ? 0 : box.scrollTop + box.clientHeight * 0.8,
+                          behavior: REDUCE ? "auto" : "smooth"});
+          });
+        }
+      }
+    });
+  });
+
+  panelEls.forEach(function(p){
+    const copy = p.firstElementChild;
+    copy.style.setProperty("--shift", shift + "px");
+    /* offsetHeight is the pre-transform layout height, so measuring it does not
+       compound with a scale left over from the previous pass */
+    const natural = copy.offsetHeight;
+    const fitH = natural > avail ? Math.max(.55, avail / natural) : 1;
+    /* and the same test across: if the block could ever reach past the open
+       space, it is scaled until it cannot */
+    const room = p.clientWidth;
+    const wide = copy.scrollWidth;
+    const fitW = (room && wide > room) ? Math.max(.5, room / wide) : 1;
+    copy.style.setProperty("--fit", r2(Math.min(fitH, fitW)));
+  });
+}
+
+function buildPanels(){
+  const caseR = caseEl.getBoundingClientRect();
+  const blocked = [];
+  document.querySelectorAll(".nook").forEach(function(n){
+    const r = n.getBoundingClientRect();
+    blocked.push([r.left - caseR.left - 40, r.right - caseR.left + 40]);
+  });
+  document.querySelectorAll("[data-slot]").forEach(function(s){
+    const r = s.getBoundingClientRect();
+    const left = r.left - caseR.left;
+    blocked.push([left - 30, left + r.width + 30]);
+    const spec = PANELS[s.dataset.slot];
+    /* hold the copy back from the edges of the gap: whatever it contains, it
+       can never reach the books standing on either side */
+    const inset = Math.min(130, Math.max(28, r.width * 0.10));
+    const p = document.createElement("div");
+    p.className = "panel " + spec.cls;
+    p.dataset.panel = s.dataset.slot;
+    p.style.left = r2(left + inset) + "px";
+    p.style.width = r2(Math.max(160, r.width - inset * 2)) + "px";
+    p.innerHTML = '<div class="v-copy">' + spec.html + '</div>';
+    caseEl.appendChild(p);
+    panelEls.push(p);
+  });
+  return blocked;
+}
+
+/* decorate() builds once, but the books reflow whenever the window changes —
+   a new height re-measures the leans, which shifts every position along the
+   shelf. So the panels are re-seated against their own opening on each layout,
+   otherwise they keep the pixel positions from the very first pass and drift
+   away from the gap they belong to. */
+function positionPanels(){
+  const caseR = caseEl.getBoundingClientRect();
+  Array.prototype.forEach.call(document.querySelectorAll("[data-slot]"), function(sl){
+    const p = caseEl.querySelector('.panel[data-panel="' + sl.dataset.slot + '"]');
+    if (!p) return;
+    const r = sl.getBoundingClientRect();
+    const inset = Math.min(130, Math.max(28, r.width * 0.10));
+    p.style.left = r2((r.left - caseR.left) + inset) + "px";
+    p.style.width = r2(Math.max(160, r.width - inset * 2)) + "px";
+  });
+}
+
+/* the dividers drift for the same reason, so they hold a fraction of the
+   shelf's length rather than a fixed pixel offset */
+function positionUprights(width){
+  Array.prototype.forEach.call(caseEl.querySelectorAll(".upright"), function(u){
+    if (u.dataset.fx) u.style.left = r2(parseFloat(u.dataset.fx) * width) + "px";
+  });
+}
+
+function addUprights(width, blocked){
+  const step = 1180;
+  for (let x = step; x < width - 200; x += step * between(.82, 1.24)){
+    let hit = false;
+    for (let i=0;i<blocked.length;i++){
+      if (x > blocked[i][0] - 30 && x < blocked[i][1] + 30){ hit = true; break; }
+    }
+    if (hit) continue;
+    const u = document.createElement("div");
+    u.className = "upright";
+    u.dataset.fx = (x / Math.max(width, 1)).toFixed(6);
+    u.style.left = r2(x) + "px";
+    caseEl.appendChild(u);
+  }
+}
+
+function decorate(width){
+  if (decorated) return;
+  decorated = true;
+
+  fillDeco(document.getElementById("rowUpper"), width, 1.45);
+  fillDeco(document.getElementById("rowLower"), width);
+
+  addKnots(document.getElementById("boardA"), width);
+  addKnots(document.getElementById("boardB"), width);
+
+  /* lights hang from the underside of a board, so only the middle shelf gets them */
+  fairyLights(document.getElementById("rowMainWrap"), width, {seg:158, sag:28, top:4});
+
+  const blocked = buildPanels();
+  addUprights(width, blocked);
+
+  [0.19, 0.51, 0.84].forEach(function(p){
+    const d = document.createElement("div");
+    d.className = "fore-book";
+    d.style.left = r2(p * width) + "px";
+    fore.appendChild(d);
+  });
+  fore.style.width = width + "px";
+}
+
+function layout(){
+  vw = window.innerWidth;
+  caseEl.style.width = "max-content";
+  fixLeans();
+  W = measureMainWidth();
+  caseEl.style.width = W + "px";
+  decorate(W);
+  positionPanels();
+  positionUprights(W);
+  centrePanelCopy();
+  maxX = Math.max(0, W - vw);
+  cacheAnchors();
+  buildRailMarks();
+  tx = clamp(tx, 0, maxX); x = clamp(x, 0, maxX);
+  railW = rail.clientWidth;
+  thumbW = Math.max(26, (vw / Math.max(W,1)) * railW);
+  railThumb.style.width = thumbW + "px";
+  lastX = NaN;
+  apply();
+}
+
+/* ============================================================
+   6 — MOTION
+   ============================================================ */
+let x = 0, tx = 0, vel = 0, dragging = false, lastPX = 0, moved = 0, tween = null, engaged = false;
+const isTouchLayout = () => window.innerWidth < 900;
+
+let railW = 0, thumbW = 26, lastX = NaN;
+
+function apply(){
+  track.style.transform = "translate3d(" + (-x) + "px,0,0)";
+  wall.style.transform = "translate3d(" + (-x * 0.34) + "px,0,0)";
+  fore.style.transform = "translate3d(" + (-x * 1.14) + "px,0,0)";
+  const p = maxX ? x / maxX : 0;
+  railThumb.style.left = (p * (railW - thumbW)) + "px";
+  updateNavState();
+}
+function frame(){
+  if (tween){
+    const t = clamp((performance.now() - tween.start) / tween.dur, 0, 1);
+    const e = t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+    tx = tween.from + (tween.to - tween.from) * e;
+    if (t >= 1) tween = null;
+  }
+  tx = clamp(tx, 0, maxX);
+  const ease = REDUCE ? 1 : (dragging ? .42 : .2);
+  x += (tx - x) * ease;
+  /* settle at half a pixel: below that nothing is visible, and chasing it
+     costs another twenty frames of painting */
+  if (Math.abs(tx - x) < .5) x = tx;
+  /* Only touch the DOM when the view has actually moved. Standing still, the
+     frame costs a few comparisons and the browser paints nothing at all. */
+  if (x !== lastX){ lastX = x; apply(); }
+  requestAnimationFrame(frame);
+}
+function engage(){ if (engaged) return; engaged = true; hint.classList.add("gone"); rail.classList.add("on"); }
+function nudge(d){ engage(); tween = null; tx = clamp(tx + d, 0, maxX); }
+function glideTo(target, dur){
+  engage();
+  tween = {from:tx, to:clamp(target,0,maxX), start:performance.now(), dur: REDUCE ? 1 : (dur || 1250)};
+}
+function centerOn(el, dur){
+  const r = el.getBoundingClientRect(), t = track.getBoundingClientRect();
+  glideTo((r.left - t.left) + r.width/2 - vw/2, dur);
+}
+
+stage.addEventListener("wheel", function(e){
+  if (isOverlayOpen()) return;
+
+  const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+  if (!dx) return;
+  e.preventDefault();
+  engage(); tween = null;
+  /* a notch should cover useful ground on a shelf thousands of pixels long */
+  tx = clamp(tx + dx * (e.deltaMode === 1 ? 34 : 2), 0, maxX);
+}, {passive:false});
+
+/* Pointer capture retargets the click event to the capturing element, which
+   swallows clicks on anything inside the stage — nooks, the hero button, the
+   contact links. So capture is only taken once a real drag is under way; a
+   plain tap never captures and reaches its button normally. */
+let captured = false;
+stage.addEventListener("pointerdown", function(e){
+  if (isOverlayOpen() || e.button !== 0) return;
+  dragging = true; moved = 0; vel = 0; tween = null; captured = false;
+  lastPX = e.clientX;
+});
+stage.addEventListener("pointermove", function(e){
+  if (!dragging) return;
+  const d = e.clientX - lastPX;
+  lastPX = e.clientX; moved += Math.abs(d);
+  if (moved > 4){
+    engage();
+    if (!captured){
+      captured = true;
+      stage.classList.add("dragging");
+      try{ stage.setPointerCapture(e.pointerId); }catch(_){}
+    }
+  }
+  if (!captured) return;
+  vel = vel * .6 + d * .4;
+  tx = clamp(tx - d, 0, maxX);
+});
+function endDrag(e){
+  if (!dragging) return;
+  dragging = false;
+  stage.classList.remove("dragging");
+  if (captured){
+    try{ stage.releasePointerCapture(e.pointerId); }catch(_){}
+    if (!REDUCE) tx = clamp(tx - vel * 11, 0, maxX);
+    if (isTouchLayout()) snap();
+  }
+  captured = false;
+}
+stage.addEventListener("pointerup", endDrag);
+stage.addEventListener("pointercancel", endDrag);
+stage.addEventListener("click", function(e){
+  if (moved > 6){ e.preventDefault(); e.stopPropagation(); moved = 0; }
+}, true);
+
+window.addEventListener("keydown", function(e){
+  if (isOverlayOpen()){ if (e.key === "Escape") closeProject(); return; }
+  if (e.key === "Escape" && bubbleOpen){ closeBubble(true); return; }
+  if (e.key === "Escape" && menuOpen){ closeMenu(true); return; }
+  const tag = (document.activeElement && document.activeElement.tagName) || "";
+  if (e.key === "ArrowRight"){ nudge(vw*.55); e.preventDefault(); }
+  else if (e.key === "ArrowLeft"){ nudge(-vw*.55); e.preventDefault(); }
+  else if (e.key === "Home"){ glideTo(0); e.preventDefault(); }
+  else if (e.key === "End"){ glideTo(maxX); e.preventDefault(); }
+  else if (e.key === "PageDown" && tag !== "BUTTON"){ nudge(vw*.9); e.preventDefault(); }
+  else if (e.key === "PageUp" && tag !== "BUTTON"){ nudge(-vw*.9); e.preventDefault(); }
+});
+document.addEventListener("focusin", function(e){
+  const t = e.target;
+  if (!t.closest || !t.closest("#stage") || isOverlayOpen()) return;
+  const r = t.getBoundingClientRect();
+  if (r.left < 80 || r.right > vw - 80) centerOn(t, 700);
+});
+
+const ANCH = {};
+let ANCH_LIST = [];
+function cacheAnchors(){
+  const trackR = track.getBoundingClientRect();
+  ANCH_LIST = [];
+  Array.prototype.forEach.call(document.querySelectorAll("[data-anchor]"), function(el){
+    const r = el.getBoundingClientRect();
+    const pos = clamp((r.left - trackR.left) + r.width/2 - vw/2, 0, maxX);
+    ANCH[el.dataset.anchor] = pos;
+    ANCH_LIST.push({key:el.dataset.anchor, pos:pos});
+  });
+  ANCH.home = 0;
+  /* the Work nav item lands on the first project on the shelf */
+  ANCH.work = ANCH[ORDER[0]];
+}
+function snap(){
+  const list = ANCH_LIST.map(a => a.pos).concat([0, maxX]);
+  let best = tx, dist = Infinity;
+  list.forEach(function(v){ const d = Math.abs(v-tx); if (d < dist){ dist = d; best = v; } });
+  glideTo(best, 800);
+}
+function targetFor(key){
+  if (key === "home") return 0;
+  if (key === "resume") return null;
+  return typeof ANCH[key] === "number" ? ANCH[key] : 0;
+}
+/* the hero call to action takes the visitor onto the shelf itself, landing on
+   the first project — the nav menu is for going straight to a named one */
+document.addEventListener("click", function(e){
+  if (e.target.closest("[data-browse]")){
+    /* straight to the first project on the shelf */
+    const first = ORDER[0];
+    if (typeof ANCH[first] === "number") glideTo(ANCH[first]);
+    return;
+  }
+  const btn = e.target.closest("[data-go]");
+  if (!btn) return;
+  const key = btn.dataset.go;
+  closeBubble(false);
+  if (key === "resume"){ glideTo(targetFor("about")); return; }
+  const t = targetFor(key);
+  if (t !== null) glideTo(t);
+});
+
+let navLinks = null, lastActive = null, lastNearest = null;
+function updateNavState(){
+  if (!navLinks) navLinks = document.querySelectorAll(".nav-link");
+  if (typeof ANCH.work !== "number") return;
+
+  /* nearest project to the centre of the view, for the menu's current marker */
+  let nearest = null, best = Infinity;
+  ORDER.forEach(function(id){
+    const d = Math.abs(ANCH[id] - x);
+    if (d < best){ best = d; nearest = id; }
+  });
+
+  if (nearest !== lastNearest){
+    lastNearest = nearest;
+    syncMenuCurrent(best < vw * 0.75 ? nearest : null);
+  }
+
+  let active = "";
+  if (x >= ANCH.contact - 340) active = "contact";
+  else if (x >= ANCH.about - 340) active = "about";
+  else if (x >= ANCH.work - 460) active = "work";
+  if (active === lastActive) return;
+  lastActive = active;
+  navLinks.forEach(function(l){
+    if (l.dataset.go === active || (active === "work" && l.id === "workBtn")) l.setAttribute("aria-current","true");
+    else l.removeAttribute("aria-current");
+  });
+}
+function railLabel(key){
+  if (key === "home") return "Start";
+  if (PROJECTS[key]) return PROJECTS[key].name;
+  return key.charAt(0).toUpperCase() + key.slice(1);
+}
+function buildRailMarks(){
+  rail.querySelectorAll(".rail-mark").forEach(n => n.remove());
+  if (!maxX) return;
+  ANCH_LIST.forEach(function(a){
+    const label = railLabel(a.key);
+    const m = document.createElement("button");
+    m.className = "rail-mark" + (PROJECTS[a.key] ? " project" : "");
+    m.type = "button";
+    m.setAttribute("aria-label", "Jump to " + label);
+    m.style.left = ((a.pos / maxX) * 100) + "%";
+    m.innerHTML = '<span class="lbl">' + label + '</span>';
+    m.addEventListener("click", function(){ glideTo(a.pos); });
+    rail.appendChild(m);
+  });
+}
+
+/* ============================================================
+   6b — JUMP MENU
+   A direct index of every project, so nobody has to travel the
+   whole shelf to reach the last one. Built from ORDER + PROJECTS.
+   ============================================================ */
+const workBtn = document.getElementById("workBtn");
+const workMenu = document.getElementById("workMenu");
+let menuOpen = false;
+
+function buildMenu(){
+  let h = '<p class="menu-head">Jump to a project</p>';
+  ORDER.forEach(function(id, i){
+    const p = PROJECTS[id];
+    h += '<button class="menu-item" type="button" role="menuitem" data-jump="' + id + '">'
+       + '<span class="menu-text"><span class="menu-name">' + p.name + '</span>'
+       + '<span class="menu-sub">' + p.sub + '</span></span></button>';
+  });
+  workMenu.innerHTML = h;
+}
+
+function menuItems(){
+  return Array.prototype.slice.call(workMenu.querySelectorAll("[data-jump]"));
+}
+function openMenu(focusFirst){
+  if (menuOpen) return;
+  menuOpen = true;
+  workMenu.hidden = false;
+  workBtn.setAttribute("aria-expanded", "true");
+  if (focusFirst) menuItems()[0].focus();
+}
+function closeMenu(returnFocus){
+  if (!menuOpen) return;
+  menuOpen = false;
+  workMenu.hidden = true;
+  workBtn.setAttribute("aria-expanded", "false");
+  if (returnFocus) workBtn.focus();
+}
+
+workBtn.addEventListener("click", function(e){
+  e.stopPropagation();
+  closeBubble(false);
+  if (menuOpen) closeMenu(false); else openMenu(false);
+});
+
+/* ---- the avatar says hello ---- */
+const brandBtn = document.getElementById("avatar");
+const brandBubble = document.getElementById("brandBubble");
+let bubbleOpen = false;
+
+function openBubble(){
+  if (bubbleOpen) return;
+  closeMenu(false);
+  bubbleOpen = true;
+  brandBubble.hidden = false;
+  /* unhide first, then animate on the next frame */
+  requestAnimationFrame(function(){ brandBubble.classList.add("open"); });
+  brandBtn.setAttribute("aria-expanded", "true");
+}
+function closeBubble(returnFocus){
+  if (!bubbleOpen) return;
+  bubbleOpen = false;
+  brandBubble.classList.remove("open");
+  brandBtn.setAttribute("aria-expanded", "false");
+  setTimeout(function(){ if (!bubbleOpen) brandBubble.hidden = true; }, 300);
+  if (returnFocus) brandBtn.focus();
+}
+
+brandBtn.addEventListener("click", function(e){
+  e.stopPropagation();
+  /* the glow has done its job once it has been noticed */
+  if (brandBtn.parentElement) brandBtn.parentElement.classList.add("met");
+  if (bubbleOpen) closeBubble(false); else openBubble();
+});
+brandBubble.addEventListener("click", function(e){ e.stopPropagation(); });
+document.addEventListener("click", function(e){
+  if (bubbleOpen && !e.target.closest(".brand-wrap")) closeBubble(false);
+});
+workBtn.addEventListener("keydown", function(e){
+  if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " "){
+    e.preventDefault();
+    openMenu(true);
+  }
+});
+workMenu.addEventListener("click", function(e){
+  const item = e.target.closest("[data-jump]");
+  if (!item) return;
+  glideTo(ANCH[item.dataset.jump]);
+  closeMenu(false);
+});
+workMenu.addEventListener("keydown", function(e){
+  const items = menuItems();
+  const i = items.indexOf(document.activeElement);
+  if (e.key === "ArrowDown"){ e.preventDefault(); items[(i+1) % items.length].focus(); }
+  else if (e.key === "ArrowUp"){ e.preventDefault(); items[(i-1+items.length) % items.length].focus(); }
+  else if (e.key === "Home"){ e.preventDefault(); items[0].focus(); }
+  else if (e.key === "End"){ e.preventDefault(); items[items.length-1].focus(); }
+  else if (e.key === "Escape"){ e.preventDefault(); closeMenu(true); }
+  else if (e.key === "Tab") closeMenu(false);
+});
+document.addEventListener("click", function(e){
+  if (menuOpen && !e.target.closest(".nav-item")) closeMenu(false);
+});
+
+/* mark the project the viewer is currently in front of */
+function syncMenuCurrent(active){
+  if (!workMenu.childElementCount) return;
+  menuItems().forEach(function(it){
+    if (it.dataset.jump === active) it.setAttribute("aria-current", "true");
+    else it.removeAttribute("aria-current");
+  });
+}
+
+/* ============================================================
+   7 — CASE STUDY
+   ============================================================ */
+const overlay = document.getElementById("overlay");
+const backBtn = document.getElementById("backBtn");
+backBtn.addEventListener("click", closeProject);
+
+let openBtn = null, openFrom = null;
+const isOverlayOpen = () => !overlay.hidden;
+
+function caseHTML(id){
+  if (CASE_BUILDERS[id]) return CASE_BUILDERS[id]();
+  const p = PROJECTS[id];
+  let secs = "";
+  p.sections.forEach(function(s){
+    secs += '<section class="cs-section"><h2>' + s[0] + '</h2><div>';
+    for (let i=1;i<s.length;i++) if (s[i]) secs += '<p>' + s[i] + '</p>';
+    secs += '</div></section>';
+  });
+  let meta = '<dl class="cs-meta">';
+  p.meta.forEach(function(m){ meta += '<div><dt>' + m[0] + '</dt><dd>' + m[1] + '</dd></div>'; });
+  meta += '</dl>';
+  return '<div class="case-inner">' +
+    '<header class="cs-hero">' + sceneMarkup(id, "hero") +
+      '<div class="cs-head"><p class="cs-kicker">' + p.kicker + '</p>' +
+      '<h1 class="cs-title" id="csTitle">' + p.name + '</h1>' +
+      '<p class="cs-sub">' + p.sub + '</p></div></header>' +
+    '<div class="cs-body">' + meta + '<div class="cs-hero-block">Project hero</div>' + secs +
+      '<div class="cs-foot"><button class="inline-cta" type="button" data-back>← Back to shelf</button></div>' +
+    '</div></div>';
+}
+
+function openProject(id, btn){
+  const r = btn.getBoundingClientRect();
+  openFrom = {l:r.left, t:r.top, w:r.width, h:r.height};
+  openBtn = btn;
+  closeMenu(false);
+  closeBubble(false);
+  overlay.innerHTML = caseHTML(id);
+  wireArt(overlay, id);
+  overlay.classList.toggle("light", !!LIGHT_CASES[id]);
+  backBtn.classList.toggle("on-light", !!LIGHT_CASES[id]);
+  overlay.hidden = false;
+  overlay.scrollTop = 0;
+  overlay.style.setProperty("--scroll", "0");
+  wireHydra(overlay);
+  document.querySelector(".nav").style.opacity = "0";
+  document.querySelector(".nav").style.pointerEvents = "none";
+  stage.setAttribute("aria-hidden","true");
+
+  if (REDUCE){
+    overlay.style.transform = "none";
+    overlay.classList.add("shown");
+  } else {
+    /* the case study grows out of the nook's own place on the shelf */
+    const sx = openFrom.w / window.innerWidth, sy = openFrom.h / window.innerHeight;
+    const ox = openFrom.l + openFrom.w/2 - window.innerWidth/2;
+    const oy = openFrom.t + openFrom.h/2 - window.innerHeight/2;
+    overlay.style.transition = "none";
+    overlay.style.transformOrigin = "50% 50%";
+    overlay.style.transform = "translate(" + ox + "px," + oy + "px) scale(" + sx + "," + sy + ")";
+    overlay.style.opacity = "0.45";
+    void overlay.offsetWidth;
+    overlay.style.transition = "transform 900ms cubic-bezier(.72,0,.16,1), opacity 520ms ease";
+    overlay.style.transform = "none";
+    overlay.style.opacity = "1";
+    requestAnimationFrame(function(){ overlay.classList.add("shown"); });
+  }
+  backBtn.hidden = false;
+  setTimeout(function(){ backBtn.focus({preventScroll:true}); }, REDUCE ? 0 : 520);
+}
+
+function closeProject(){
+  if (!isOverlayOpen()) return;
+  overlay.classList.remove("shown");
+  backBtn.hidden = true;
+  const btn = openBtn;
+  /* the live rect is unusable while the stage is scaled away, so the geometry
+     captured on the way in is what we return to */
+  const r = openFrom;
+  const finish = function(){
+    overlay.hidden = true;
+    overlay.innerHTML = "";
+    hbDrift = [];
+    overlay.classList.remove("light");
+    backBtn.classList.remove("on-light");
+    overlay.style.transition = "none";
+    overlay.style.transform = "none";
+    overlay.style.opacity = "1";
+    overlay.style.filter = "none";
+    document.querySelector(".nav").style.opacity = "";
+    document.querySelector(".nav").style.pointerEvents = "";
+    stage.removeAttribute("aria-hidden");
+    if (btn) btn.focus({preventScroll:true});
+  };
+  if (REDUCE || !r){ finish(); return; }
+  const sx = r.w / window.innerWidth, sy = r.h / window.innerHeight;
+  const ox = r.l + r.w/2 - window.innerWidth/2;
+  const oy = r.t + r.h/2 - window.innerHeight/2;
+  overlay.style.transition = "transform 700ms cubic-bezier(.72,0,.16,1), opacity 420ms ease 180ms";
+  overlay.style.transform = "translate(" + ox + "px," + oy + "px) scale(" + sx + "," + sy + ")";
+  overlay.style.opacity = "0";
+  setTimeout(finish, 720);
+}
+
+overlay.addEventListener("click", function(e){ if (e.target.closest("[data-back]")) closeProject(); });
+document.addEventListener("click", function(e){
+  const n = e.target.closest(".nook");
+  if (!n || moved > 6) return;
+  openProject(n.dataset.project, n);
+});
+
+/* ============================================================
+   7b — HYDRABLOOM CASE STUDY
+   ============================================================ */
+
+/* ---- APP SCREENSHOTS -----------------------------------------------------
+   Drop a screenshot against any key and it fills that phone. Portrait, about
+   9:19. Anything left empty shows a labelled placeholder.                    */
+/* ---- APP ICON ------------------------------------------------------------
+   A path or URL for the app icon shown in the hero. Square image; it is
+   rounded automatically. Leave empty for the built-in droplet mark.         */
+const APP_ICON = "";
+
+const SHOTS = {
+  hero1:"", hero2:"", hero3:"",
+  iter1a:"", iter1b:"", iter2a:"", iter2b:"", iter3a:"", iter3b:"",
+  onboarding:"", signin:"", dashboard:"",
+  goal:"", recommend:"", customise:"",
+  garden:"", growth:"", logging:"",
+  education:"", awareness:"", progress:""
+};
+
+/* all three research views share one row shape: a title and a short body */
+const HB_METHODS = [
+  ["Competitive analysis","Existing hydration apps reviewed for what keeps people logging, and for the moment each one loses them."],
+  ["User interviews","Informal conversations with students and busy individuals about when they drink water, and when they forget."],
+  ["Habit observation","Watching how people actually track intake across a day, and where the tracking quietly falls apart."],
+  ["Heuristic analysis","Nielsen heuristics and the Gulfs of Execution and Evaluation applied to competitor onboarding and logging flows."]
+];
+
+const HB_INSIGHTS = [
+  ["People forget, they don't refuse","Nobody interviewed disagreed that they should drink more water. The gap was attention, not willingness — which moves the design problem from persuasion to presence."],
+  ["A number is not a reward","Hitting a target in millilitres produced no feeling worth returning for. Progress had to become something you could watch change shape."],
+  ["Streaks punish more than they encourage","Once a streak broke, most people stopped opening the app at all. Any progress system needed a way to recover rather than reset."],
+  ["Slow days still need something to offer","On days when intake was low, an app with nothing to say got closed and forgotten. Education gave the product a second reason to exist."]
+];
+
+const HB_COMPETITORS = [
+  ["Plant Nanny","<b>Does well:</b> growth as a reward, with real character in the art.","<b>Loses people:</b> progress can die permanently, which reads as punishment rather than feedback."],
+  ["WaterMinder","<b>Does well:</b> fast logging and precise, trustworthy data.","<b>Loses people:</b> purely numerical, so there is nothing to come back to once the entry is made."],
+  ["Hydro Coach","<b>Does well:</b> personalised targets calculated from body data.","<b>Loses people:</b> dense and clinical, with a steep first session before any payoff."],
+  ["Apple Health","<b>Does well:</b> already installed, with no setup required.","<b>Loses people:</b> hydration sits buried among dozens of other metrics and is easy to never find."]
+];
+
+const HB_ELEMENTS = [
+  {k:"sun", name:"Sun", meaning:"Energy, motivation, and progress.",
+   where:"Appears in goal tracking, introducing daily motivation."},
+  {k:"sky", name:"Sky", meaning:"Clarity, reflection, and calmness.",
+   where:"Appears in onboarding, creating a calm environment."},
+  {k:"earth", name:"Earth", meaning:"Growth and evolution.",
+   where:"Appears in the garden, supporting visual growth."}
+];
+
+const HB_WALKS = [
+  {title:"Getting started", element:"Sky",
+   sub:"clarity, reflection, and calmness. These screens set a calm tone before the app asks anything at all.",
+   halo:"rgba(52,124,172,.72)", cast:"rgba(34,92,132,.5)", steps:[
+    ["Engaging onboarding","Introduces HydraBloom's playful visual identity and creates a welcoming first impression that encourages users to begin building healthy hydration habits.","onboarding"],
+    ["Seamless sign-in","Provides a straightforward login process that lets users securely reach their hydration data and personalised progress.","signin"],
+    ["Centralised dashboard","Organises key features into a clear navigation hub, so users can track intake, monitor garden growth, view statistics, and learn hydration facts.","dashboard"]
+  ]},
+  {title:"Setting the goal", element:"Sun",
+   sub:"energy, motivation, and progress. The daily target is set here, and the app starts giving something back.",
+   halo:"rgba(232,186,104,.4)", cast:"rgba(198,150,66,.22)", steps:[
+    ["Water goal creation","Users begin onboarding by creating a daily hydration goal that guides their progress throughout the app.","goal"],
+    ["Personalised recommendation","Using height and weight, HydraBloom calculates a recommended daily intake as a personalised starting point.","recommend"],
+    ["Flexible customisation","Users fine-tune the recommendation up or down to match their lifestyle, activity level, and preferences.","customise"]
+  ]},
+  {title:"Growing the garden", element:"Earth",
+   sub:"growth and evolution. Progress stops being a number to hit and becomes something visibly alive.",
+   halo:"rgba(78,134,58,.7)", cast:"rgba(58,104,42,.48)", steps:[
+    ["Gamified garden progress","Users watch their garden fill in and unlock new plants as they meet hydration goals, turning tracking into a reward.","garden"],
+    ["Real-time plant growth","Each entry contributes to growth, giving immediate visual feedback that reinforces the habit and celebrates progress.","growth"],
+    ["Effortless water tracking","Preset amounts and custom entries make logging quick enough to stay consistent through the day.","logging"]
+  ]}
+];
+
+const HB_KNOW = [
+  ["education","Hydration education","Short, readable facts turn the app into something worth opening even on a slow day. Learning is framed as approachable rather than clinical, so it rewards curiosity instead of testing knowledge."],
+  ["awareness","Hydration awareness","Gentle prompts connect what someone drank to how they feel. The tone stays encouraging — the app notices a quiet day without scolding anyone for it."],
+  ["progress","Progress at a glance","Milestones and history appear as a garden filling in over time rather than a chart of misses, so looking back feels like reviewing growth instead of auditing failure."]
+];
+
+/* the loop the product is trying to break */
+const HB_CYCLE = [
+  ["Forget","The day fills up. Water is never the thing you are thinking about."],
+  ["Get reminded","A notification arrives, usually at the wrong moment, and gets swiped away."],
+  ["Log water","You drink, you tap, a number goes up. Nothing about it asks you to return."],
+  ["Forget again","With no reason to reopen the app, the habit resets and the loop starts over."]
+];
+
+/* who the research pointed at — three profiles the whole product answers to */
+const HB_PERSONAS = [
+  {initial:"M", tint:"#e0a52c", name:"Maya", meta:"20 · Full-time student",
+   quote:"I don't forget on purpose. I look up and it's 4pm and I've had a coffee.",
+   goal:"A habit that survives an exam week, not just a calm one.",
+   friction:"Reminders arrive mid-lecture and get swiped away without reading."},
+  {initial:"D", tint:"#3f88b4", name:"Devin", meta:"24 · Grad student, works part-time",
+   quote:"I broke a twelve-day streak and just deleted it. It felt like being told off.",
+   goal:"To see effort accumulate into something worth looking back at.",
+   friction:"Percentages mean nothing to him, and losing a streak ends the relationship."},
+  {initial:"P", tint:"#5a9143", name:"Priya", meta:"22 · Commuter student",
+   quote:"There were so many buttons. I only ever wanted to press one.",
+   goal:"To log a glass in the seconds between a lecture and a bus.",
+   friction:"Dense dashboards bury the single action she opens the app to do."}
+];
+
+/* every decision traced back to a finding *//* every decision traced back to a finding */
+const HB_BRIDGE = [
+  ["People forget, they don't refuse","Quick Add and gentle reminders",
+   "One tap logs a preset amount from the home screen, and prompts arrive as encouragement rather than an alarm."],
+  ["A number is not a reward","Visible plant growth",
+   "Progress is shown as something changing shape rather than a percentage, so there is a reason to look again tomorrow."],
+  ["Clutter buried the one action","A simplified dashboard",
+   "The home screen carries logging first and everything else second, so the common task is never more than one tap deep."],
+  ["Positive reinforcement held attention","Garden rewards, never punishment",
+   "New plants unlock as goals are met, and a missed day wilts rather than deletes — the garden can always recover."]
+];
+
+/* one path through the product, and the places it can branch. every screen
+   reuses a SHOTS key, so filling a slot once populates it everywhere. */
+const HB_FLOW = [
+  ["onboarding","First launch","The pitch, in three cards"],
+  ["signin",    "Sign in",     "Account created or restored"],
+  ["dashboard", "Home",        "Everything hangs off here",  true],
+  ["logging",   "Log water",   "One tap on a preset"],
+  ["progress",  "Goal met",    "The ring closes for the day"],
+  ["growth",    "Plant grows", "The day pays off"]
+];
+const HB_FLOW_ALT = [
+  ["garden",   "Garden"],
+  ["goal",     "Your goal"],
+  ["education","Hydrafacts"]
+];
+
+/* what changed between the first pass and the final one */
+const HB_ITERS = [
+  {title:"Logging water",
+   was:["iter1a","First idea"], now:["iter1b","Where it landed"],
+   note:"A modal with a number pad meant four taps to record a glass. Presets on the home screen brought it down to one, and logging frequency in testing went up straight away."},
+  {title:"The dashboard",
+   was:["iter2a","First idea"], now:["iter2b","Where it landed"],
+   note:"The first layout gave equal weight to stats, facts, garden and history. Nobody could find the log button. The final version leads with the day's progress and demotes everything else."},
+  {title:"Progress and setbacks",
+   was:["iter3a","First idea"], now:["iter3b","Where it landed"],
+   note:"An early version reset the garden after a missed day. Testers found that punishing, so plants now wilt and recover instead — the same signal without the guilt."}
+];
+
+const HB_FAQ = [
+  ["What was the biggest takeaway?","Placeholder answer. The short version: motivation is easier to design for than discipline. People kept using the app when it showed them something alive, not when it showed them a number they had missed."],
+  ["Why the Sun, Sky, and Earth theme?","Placeholder answer. Hydration is a cycle rather than a target, so the visual system borrows one. Sun carries energy and motivation, sky carries calm and clarity, earth carries growth over time — and each maps to a real part of the product rather than sitting on top as decoration."],
+  ["Why Hydrafacts?","Placeholder answer. Education gave the app something to say on days when progress was slow, so opening it still returned something."],
+  ["What would you improve next?","Placeholder answer. More states for the garden between thriving and wilting, and a gentler recovery path after a missed stretch."]
+];
+
+/* Two halves of the same pair of rings. "back" draws the arcs that pass behind
+   the phones, "front" draws the arcs that continue in front of them — together
+   they read as loops wrapping around the pair. */
+/* a plain screen frame — lighter than a full handset, for iteration and
+   journey thumbnails */
+function hbFrame(key, label, was){
+  const src = SHOTS[key];
+  return '<div class="hb-frame' + (was ? " was" : "") + '">'
+       + (src ? '<img src="' + src + '" alt="" aria-hidden="true">' : '<em>' + label + '</em>')
+       + '</div>';
+}
+
+/* Low-contrast objects that move at their own pace as the page scrolls.
+   sun = sparks, sky = clouds, earth = leaves. */
+function driftLayer(kind, n){
+  let h = '<div class="hb-drift" aria-hidden="true">';
+  for (let i = 0; i < n; i++){
+    const t = (i + 1) / (n + 1);
+    const left = (t * 100 + (i % 2 ? -13 : 11)).toFixed(1);
+    const top = (8 + ((i * 37) % 74)).toFixed(1);
+    const sp = (0.05 + (i % 3) * 0.045).toFixed(3);
+    let cls = "spark", w = 26 + (i % 3) * 16, style = "";
+    if (kind === "sky"){
+      cls = "cloud"; w = 90 + (i % 3) * 46;
+      style = "height:" + (w * 0.3).toFixed(0) + "px;opacity:" + (0.3 + (i % 3) * 0.1).toFixed(2) + ";";
+    } else if (kind === "earth"){
+      cls = "leaf"; w = 20 + (i % 3) * 12;
+      style = "height:" + (w * 0.62).toFixed(0) + "px;opacity:" + (0.28 + (i % 3) * 0.1).toFixed(2)
+            + ";transform-origin:center;rotate:" + (-30 + i * 24) + "deg;";
+    } else {
+      style = "height:" + w + "px;opacity:" + (0.4 + (i % 3) * 0.15).toFixed(2) + ";";
+    }
+    h += '<span class="' + cls + '" data-sp="' + sp + '" style="left:' + left + '%;top:' + top
+       + '%;width:' + w + 'px;' + style + '"></span>';
+  }
+  return h + '</div>';
+}
+
+function hbScreenInner(key, label){
+  const src = SHOTS[key];
+  if (src) return '<img src="' + src + '" alt="" aria-hidden="true">';
+  /* nothing to show yet, so the screen carries an abstract wash rather than a void */
+  return '<span class="scr-deco" aria-hidden="true"><i></i><i></i><i></i></span>'
+       + '<em>' + label + '</em>';
+}
+function hbPhone(key, label){
+  return '<div class="hb-phone"><div class="scr">'
+       + hbScreenInner(key, label) + '</div></div>';
+}
+
+function hydrabloomCase(){
+  const p = PROJECTS.hydrabloom;
+  let h = '<div class="case-inner cs-hydra">';
+
+  h += '<div class="hb-track" aria-hidden="true"><div class="hb-fill"></div></div>'
+     + '<span class="hb-sun" aria-hidden="true"></span>';
+
+  [["26%","-12%","60vw","#ffe9be",.42],["36%","56%","48vw","#fff3d8",.36],
+   ["56%","-14%","58vw","#c9e4f5",.42],["64%","54%","50vw","#dcf0f7",.36],
+   ["81%","-10%","56vw","#d3e9b6",.42]].forEach(function(a){
+    h += '<div class="hb-aura" aria-hidden="true" style="top:' + a[0] + ';left:' + a[1]
+       + ';width:' + a[2] + ';height:' + a[2] + ';background:' + a[3] + ';opacity:' + a[4] + '"></div>';
+  });
+
+  /* ---- hero ---- */
+  h += '<header class="hb-hero">'
+     + '<span class="hb-tide t1" aria-hidden="true"></span>'
+     + '<span class="hb-tide t2" aria-hidden="true"></span>'
+     + '<span class="hb-tide t3" aria-hidden="true"></span>'
+     + '<span class="hb-tide t4" aria-hidden="true"></span>'
+     + '<div class="hb-hero-copy">'
+     +   '<div class="hb-mark reveal' + (APP_ICON ? ' has-icon' : '') + '" aria-hidden="true"'
+     +     (APP_ICON ? ' style="background-image:url(\'' + APP_ICON + '\')"' : '')
+     +     '><i></i><b></b></div>'
+     +   '<h1 class="hb-word2 reveal d1" id="csTitle">HydraBloom</h1>'
+     +   '<p class="hb-desc reveal d2">' + p.sub + '<br>A daily target you can watch grow.</p>'
+     +   '<dl class="hb-meta reveal d3">';
+  p.meta.forEach(function(m){ h += '<div><dt>' + m[0] + '</dt><dd>' + m[1] + '</dd></div>'; });
+  h += '</dl></div>'
+     + '<div class="hb-cluster" id="hbCluster">'
+     +   '<div class="pod p1">' + hbPhone("hero1","Daily goal") + '</div>'
+     +   '<div class="pod p2">' + hbPhone("hero2","Launch screen") + '</div>'
+     +   '<div class="pod p3">' + hbPhone("hero3","Garden") + '</div>'
+     + '</div>'
+     + '<div class="hb-wave" aria-hidden="true">'
+     +   '<svg viewBox="0 0 1440 200" preserveAspectRatio="none">'
+     +   '<path fill="rgba(255,255,255,.34)" d="M0,96 C240,168 420,24 720,72 C1020,120 1200,184 1440,120 L1440,200 L0,200 Z"/>'
+     +   '<path fill="#ffffff" d="M0,140 C260,196 460,84 760,116 C1040,146 1240,196 1440,158 L1440,200 L0,200 Z"/>'
+     +   '</svg>'
+     + '</div>'
+     + '</header>';
+
+  /* ---- overview + chapters ---- */
+  h += '<section class="hb-sec"><div>'
+     + '<p class="hb-eyebrow reveal">HydraBloom overview</p>'
+     + '<h2 class="hb-xl wide reveal d1">A playful hydration concept shaped by research, onboarding, daily goals, garden progress, and simple education moments.</h2>'
+     + '<ol class="hb-chapters reveal d2">';
+  [["01","Research and concept framing","hb-01"],
+   ["02","Onboarding, goals, and garden growth","hb-02"],
+   ["03","Knowledge, progress, and reflection","hb-03"]].forEach(function(c){
+    h += '<li><button type="button" data-hb-jump="' + c[2] + '">'
+       + '<span class="n">' + c[0] + '</span><span class="t">' + c[1] + '</span></button></li>';
+  });
+  h += '</ol></div></section>';
+
+  /* ---- 01 opens on the problem, then answers it ---- */
+  h += '<section class="hb-sec" id="hb-01">' + driftLayer("sun", 6) + '<div>'
+     + '<p class="hb-eyebrow reveal">01 — Research and concept framing</p>'
+     + '<h2 class="hb-statement reveal d1">We know we should drink water.<br>'
+     +   '<em>So why do we keep forgetting?</em></h2>'
+     + '<p class="hb-lead reveal d2">Not for lack of trying. Everyone interviewed already owned a '
+     +   'water bottle and had installed a tracker at some point. The habit did not fail at the point '
+     +   'of intention — it failed a few days in, always the same way.</p>'
+     + '<ol class="hb-cycle reveal d2">';
+  HB_CYCLE.forEach(function(c, i){
+    h += '<li><span class="n">0' + (i+1) + '</span><h4>' + c[0] + '</h4><p>' + c[1] + '</p></li>';
+  });
+  h += '</ol>'
+     + '<div class="hb-loop reveal d3" aria-hidden="true">'
+     +   '<span class="tip"></span><span class="lbl">and round it goes</span>'
+     + '</div>'
+     + '</div></section>';
+
+  /* ---- what the project set out to do about it ---- */
+  h += '<section class="hb-sec"><div>'
+     + '<h2 class="hb-xl reveal">Project overview</h2>'
+     + '<p class="hb-lead reveal d1">Breaking that loop meant giving the habit somewhere to '
+     +   'accumulate. HydraBloom pairs hydration tracking with a garden that grows as goals are '
+     +   'met, so progress is something you can watch change rather than a number you are told.</p>'
+     + '<div class="hb-cards">'
+     + '<div class="hb-card reveal d1"><h3>Design goal</h3><p>Placeholder copy. Make progress something you can watch grow, so the reward for drinking water is visual rather than numerical.</p></div>'
+     + '<div class="hb-card reveal d2"><h3>Project context</h3><p>Placeholder copy. Self-directed product design project covering research, IA, the visual system, and high-fidelity screens.</p></div>'
+     + '<div class="hb-card reveal d3"><h3>My role</h3><p>Placeholder copy. Sole designer across research, concept, interaction, visual system, and the final high-fidelity screens.</p></div>'
+     + '</div></div></section>';
+
+  /* ---- research: evidence first, then the three views ---- */
+  h += '<section class="hb-sec">' + driftLayer("sky", 5) + '<div>'
+     + '<h2 class="hb-xl reveal">User research</h2>'
+     + '<p class="hb-lead reveal d1">To understand hydration habits and engagement patterns, research looked at why people struggle to stay consistent, and why so many hydration apps lose them within a fortnight.</p>'
+     + '<div class="hb-converge reveal d1" aria-hidden="true">'
+     +   '<span class="lbl">three profiles, one shared problem</span>'
+     +   '<i class="c1"></i><i class="c2"></i><i class="c3"></i>'
+     + '</div>'
+     + '<div class="hb-personas reveal d2">';
+  HB_PERSONAS.forEach(function(pr){
+    h += '<article class="hb-persona">'
+       +   '<div class="who">'
+       +     '<span class="hb-avatar" aria-hidden="true" style="background:' + pr.tint + '">'
+       +       pr.initial + '</span>'
+       +     '<span><h4>' + pr.name + '</h4><span class="meta">' + pr.meta + '</span></span>'
+       +   '</div>'
+       +   '<blockquote>&ldquo;' + pr.quote + '&rdquo;</blockquote>'
+       +   '<dl><div><dt>What they want</dt><dd>' + pr.goal + '</dd></div>'
+       +     '<div><dt>What gets in the way</dt><dd>' + pr.friction + '</dd></div></dl>'
+       + '</article>';
+  });
+  h += '</div>'
+     + '<div class="hb-tabs reveal d2" role="tablist" aria-label="Research views">'
+     + '<button type="button" role="tab" aria-selected="true" data-hb-tab="methods">Research methods</button>'
+     + '<button type="button" role="tab" aria-selected="false" data-hb-tab="insights">Key insights</button>'
+     + '<button type="button" role="tab" aria-selected="false" data-hb-tab="comp">Competitive analysis</button>'
+     + '</div><div class="reveal d2">';
+
+  h += '<div class="hb-panel on" id="hb-p-methods" role="tabpanel"><div class="hb-stack">';
+  HB_METHODS.forEach(function(m){
+    h += '<article class="hb-row"><h4>' + m[0] + '</h4><p>' + m[1] + '</p></article>';
+  });
+  h += '</div></div>';
+
+  h += '<div class="hb-panel" id="hb-p-insights" role="tabpanel"><div class="hb-stack">';
+  HB_INSIGHTS.forEach(function(i){
+    h += '<article class="hb-row"><h4>' + i[0] + '</h4><p>' + i[1] + '</p></article>';
+  });
+  h += '</div></div>';
+
+  h += '<div class="hb-panel" id="hb-p-comp" role="tabpanel"><div class="hb-stack">';
+  HB_COMPETITORS.forEach(function(c){
+    h += '<article class="hb-row"><h4>' + c[0] + '</h4><p>' + c[1] + '</p><p>' + c[2] + '</p></article>';
+  });
+  h += '</div></div></div></div></section>';
+
+  /* ---- research to design decision ---- */
+  h += '<section class="hb-sec">' + driftLayer("sky", 5) + '<div>'
+     + '<p class="hb-eyebrow reveal">From research to design</p>'
+     + '<h2 class="hb-xl wide reveal d1">Every decision traces back to something somebody said.</h2>'
+     + '<ul class="hb-bridge reveal d2">';
+  HB_BRIDGE.forEach(function(b){
+    h += '<li>'
+       +   '<span class="from"><b>What we heard</b>' + b[0] + '</span>'
+       +   '<span class="arw" aria-hidden="true"></span>'
+       +   '<span class="to"><h4>' + b[1] + '</h4><p>' + b[2] + '</p></span>'
+       + '</li>';
+  });
+  h += '</ul></div></section>';
+
+  /* ---- introducing card ---- */
+  h += '<section class="hb-intro" id="hb-intro"><div class="hb-intro-wrap">'
+     + '<div class="hb-intro-card" data-hb-introcard>'
+     +   '<span class="hb-orb" aria-hidden="true" style="left:-8%;top:-30%;width:46%;aspect-ratio:1;background:#ffeac2"></span>'
+     +   '<span class="hb-orb" aria-hidden="true" style="right:-10%;bottom:-34%;width:52%;aspect-ratio:1;background:#cbe5f6"></span>'
+     +   '<span class="hb-orb" aria-hidden="true" style="left:38%;bottom:-40%;width:40%;aspect-ratio:1;background:#d5eab9"></span>'
+     +   '<h2>' + "Now introducing HydraBloom.".split(" ").map(function(w,i){
+           return '<span style="transition-delay:' + (i*0.12).toFixed(2) + 's">' + w + '&nbsp;</span>';
+         }).join("") + '</h2>'
+     +   '<p class="sub">Three ideas hold the product together — and every one of them comes from somewhere in the sky.</p>'
+     + '</div></div></section>';
+
+  /* ---- visual system ---- */
+  h += '<section class="hb-sec" id="hb-theme"><div>'
+     + '<p class="hb-eyebrow reveal">Visual system</p>'
+     + '<h2 class="hb-xl wide reveal d1">HydraBloom\'s design is inspired by the natural cycle of growth, energy, and balance.</h2>'
+     + '<div class="hb-trio">';
+  HB_ELEMENTS.forEach(function(e, i){
+    h += '<article class="hb-el hb-el--' + e.k + ' reveal d' + (i+1) + '" data-tilt>'
+       + '<h3>' + e.name + '</h3><p>' + e.meaning + '</p>'
+       + '<div class="where"><b>In the product</b><span>' + e.where + '</span></div>'
+       + '</article>';
+  });
+  h += '</div>';
+
+  /* the product's own typeface, shown rather than described */
+  h += '<div class="hb-type reveal d2">'
+     + '<div>'
+     +   '<span class="hb-type-word">HydraBloom</span>'
+     +   '<span class="hb-type-set">Aa Bb Cc Dd Ee &nbsp; 0 1 2 3 4 5</span>'
+     + '</div>'
+     + '<div class="hb-type-meta">'
+     +   '<b>DynaPuff</b>'
+     +   '<span class="cut">Bold &middot; 700</span>'
+     +   '<p>Rounded, buoyant, and a little soft at the edges — it carries the '
+     +   'app\'s warmth without tipping into something childish, and reads clearly '
+     +   'at the small sizes the interface needs.</p>'
+     + '</div></div>';
+
+  h += '</div></section>';
+
+  /* ---- 02 walkthroughs ---- */
+  h += '<section class="hb-sec" id="hb-02"><div>'
+     + '<p class="hb-eyebrow reveal">02 — Onboarding, goals, and garden growth</p>';
+  HB_WALKS.forEach(function(w, wi){
+    h += '<div class="hb-walk" data-hb-walk="' + wi + '"'
+       + ' style="--halo:' + w.halo + ';--halo-cast:' + w.cast + '">'
+       + '<h3 class="hb-xl reveal">' + w.title + '</h3>'
+       + '<p class="hb-walk-sub reveal d1"><b>' + w.element + '</b> — ' + w.sub + '</p>'
+       + '<div class="hb-walk-grid"><ol class="hb-numbers reveal d1">';
+    w.steps.forEach(function(st, si){
+      h += '<li><button type="button" aria-selected="' + (si === 0) + '" data-hb-step="' + si + '">'
+         + '<span class="n">' + (si+1) + '</span>'
+         + '<span><h4>' + st[0] + '</h4><p>' + st[1] + '</p></span></button></li>';
+    });
+    h += '</ol><div class="hb-walk-stage reveal d2">'
+       + '<span class="halo" aria-hidden="true"></span>'
+       + '<div class="hb-float">' + hbPhone(w.steps[0][2], w.steps[0][0]) + '</div>'
+       + '</div></div></div>';
+  });
+  h += '</div></section>';
+
+  /* ---- 03 knowledge ---- */
+  h += '<section class="hb-sec" id="hb-03"><div>'
+     + '<p class="hb-eyebrow reveal">03 — Knowledge, progress, and reflection</p>'
+     + '<h2 class="hb-xl wide reveal d1">And finally, knowledge meets progress.</h2>'
+     + '<p class="hb-lead reveal d2">From hydration facts to personal milestones, users learn more about their health while watching growth accumulate. Pick a screen to read what it does.</p>'
+     + '<div class="hb-screens reveal d2">';
+  HB_KNOW.forEach(function(k, i){
+    h += '<button class="hb-pick" type="button" aria-expanded="false" data-hb-know="' + i + '">'
+       + hbPhone(k[0], k[1]) + '<span class="tapme">' + k[1] + '</span></button>';
+  });
+  h += '</div><div class="hb-pop" id="hb-pop" role="region" aria-live="polite">'
+     + '<h3></h3><p></p></div></div></section>';
+
+  /* ---- how someone moves through it ---- */
+  h += '<section class="hb-sec" id="hb-flow">' + driftLayer("earth", 5) + '<div>'
+     + '<p class="hb-eyebrow reveal">User flow</p>'
+     + '<h2 class="hb-xl reveal d1">How someone moves through the app</h2>'
+     + '<p class="hb-lead reveal d2">The path from a cold open to a first reward, and the '
+     +   'three places the home screen lets you step off it.</p>'
+     + '<div class="hb-flow reveal d2"><ol class="hb-flow-main">';
+  HB_FLOW.forEach(function(f, i){
+    h += '<li class="hb-fnode' + (f[3] ? ' hub' : '') + '">'
+       +   '<span class="step" aria-hidden="true">' + (i+1) + '</span>'
+       +   '<span class="fwrap">' + hbFrame(f[0], f[1]) + '</span>'
+       +   '<h4>' + f[1] + '</h4><p>' + f[2] + '</p>'
+       + '</li>';
+  });
+  h += '</ol>'
+     + '<div class="hb-flow-alt">'
+     +   '<p class="from">From <b>Home</b>, the flow can also branch to</p><ul>';
+  HB_FLOW_ALT.forEach(function(a){
+    h += '<li>' + hbFrame(a[0], a[1]) + '<h4>' + a[1] + '</h4></li>';
+  });
+  h += '</ul></div></div></div></section>';
+
+  /* ---- what changed ---- */
+  h += '<section class="hb-sec">' + driftLayer("earth", 5) + '<div>'
+     + '<p class="hb-eyebrow reveal">Iteration</p>'
+     + '<h2 class="hb-xl reveal d1">What changed along the way</h2>'
+     + '<p class="hb-lead reveal d2">Three things did not survive first contact with a tester. '
+     +   'Each went through a version that made sense on paper and not in a hand.</p>'
+     + '<div class="hb-iters">';
+  HB_ITERS.forEach(function(it, i){
+    h += '<article class="hb-iter reveal d' + Math.min(i+1, 3) + '">'
+       +   '<h4>' + it.title + '</h4>'
+       +   '<div class="hb-iter-row">'
+       +     '<figure>' + hbFrame(it.was[0], it.was[1], true)
+       +       '<figcaption>' + it.was[1] + '</figcaption></figure>'
+       +     '<span class="hb-iter-arrow" aria-hidden="true"></span>'
+       +     '<figure>' + hbFrame(it.now[0], it.now[1])
+       +       '<figcaption>' + it.now[1] + '</figcaption></figure>'
+       +   '</div>'
+       +   '<p class="hb-iter-note"><b>What wasn\'t working:</b> ' + it.note + '</p>'
+       + '</article>';
+  });
+  h += '</div></div></section>';
+
+  /* ---- reflection ---- */
+  h += '<section class="hb-sec"><div>'
+     + '<p class="hb-eyebrow reveal">FAQ</p>'
+     + '<h2 class="hb-xl reveal d1">Project reflection</h2>'
+     + '<p class="hb-lead reveal d2">That\'s it for now, thanks for stopping by. A quick Q&amp;A on the decisions, the lessons, and where HydraBloom goes next.</p>'
+     + '<div class="hb-glass reveal d2" data-hb-glass><div class="hb-faq">';
+  HB_FAQ.forEach(function(q, i){
+    h += '<div class="hb-q">'
+       + '<button type="button" aria-expanded="false" data-hb-q="' + i + '">'
+       + '<span class="n">0' + (i+1) + '</span><span class="q">' + q[0] + '</span>'
+       + '<span class="pm" aria-hidden="true"></span></button>'
+       + '<div class="hb-a" id="hb-a-' + i + '"><p>' + q[1] + '</p></div></div>';
+  });
+  h += '</div></div></div></section>';
+
+  h += '<footer class="hb-foot">'
+     + '<p class="thanks reveal">Thanks for reading.</p>'
+     + '<button class="hb-back reveal d1" type="button" data-back>← Back to shelf</button>'
+     + '</footer>';
+
+  return h + '</div>';
+}
+
+/* ---- interactions ---- */
+function hbSetScroll(){
+  const max = overlay.scrollHeight - overlay.clientHeight;
+  overlay.style.setProperty("--scroll", max > 0 ? (overlay.scrollTop / max).toFixed(4) : "0");
+}
+overlay.addEventListener("scroll", function(){
+  if (!overlay.classList.contains("light")) return;
+  hbSetScroll();
+  if (!REDUCE) queueDrift();
+}, {passive:true});
+
+let hbObserver = null;
+
+function hbTilt(el, strength){
+  el.addEventListener("pointermove", function(e){
+    const r = el.getBoundingClientRect();
+    const nx = (e.clientX - r.left) / r.width - .5;
+    const ny = (e.clientY - r.top) / r.height - .5;
+    el.style.setProperty("--ry", (nx * strength).toFixed(2) + "deg");
+    el.style.setProperty("--rx", (-ny * strength * .85).toFixed(2) + "deg");
+    el.classList.add("lift");
+  });
+  el.addEventListener("pointerleave", function(){
+    el.style.setProperty("--ry", "0deg");
+    el.style.setProperty("--rx", "0deg");
+    el.classList.remove("lift");
+  });
+}
+
+let hbDrift = [], hbDriftRaf = 0;
+
+/* Each drift object moves at its own fraction of the page's motion. Positions
+   are read from the layer once per frame, not per object, and the whole thing
+   is throttled to one animation frame. */
+function updateDrift(){
+  hbDriftRaf = 0;
+  const h = overlay.clientHeight;
+  for (let i = 0; i < hbDrift.length; i++){
+    const g = hbDrift[i];
+    const r = g.layer.getBoundingClientRect();
+    if (r.bottom < -200 || r.top > h + 200) continue;
+    const c = r.top + r.height / 2 - h / 2;
+    for (let j = 0; j < g.kids.length; j++){
+      g.kids[j].el.style.transform =
+        "translate3d(0," + (c * g.kids[j].sp).toFixed(1) + "px,0)";
+    }
+  }
+}
+function queueDrift(){
+  if (!hbDriftRaf) hbDriftRaf = requestAnimationFrame(updateDrift);
+}
+
+function wireHydra(root){
+  if (!root.querySelector(".cs-hydra")) return;
+  hbSetScroll();
+
+  hbDrift = Array.prototype.map.call(root.querySelectorAll(".hb-drift"), function(layer){
+    return {
+      layer: layer,
+      kids: Array.prototype.map.call(layer.children, function(el){
+        return {el: el, sp: parseFloat(el.dataset.sp) || 0};
+      })
+    };
+  });
+  if (!REDUCE) queueDrift();
+
+  /* --- everything arrives on scroll --- */
+  if (hbObserver) hbObserver.disconnect();
+  if (REDUCE){
+    root.querySelectorAll(".reveal").forEach(function(el){ el.classList.add("in"); });
+    const intro = root.querySelector(".hb-intro");
+    if (intro) intro.classList.add("in");
+  } else {
+    hbObserver = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (en.isIntersecting){ en.target.classList.add("in"); hbObserver.unobserve(en.target); }
+      });
+    }, {root: overlay, threshold:.14, rootMargin:"0px 0px -6% 0px"});
+    root.querySelectorAll(".reveal, .hb-intro").forEach(function(el){ hbObserver.observe(el); });
+  }
+
+  if (!REDUCE){
+    root.querySelectorAll("[data-tilt]").forEach(function(el){ hbTilt(el, 13); });
+
+    /* the introducing card tilts and catches the light */
+    const card = root.querySelector("[data-hb-introcard]");
+    if (card){
+      hbTilt(card, 5);
+      card.addEventListener("pointermove", function(e){
+        const r = card.getBoundingClientRect();
+        card.style.setProperty("--mx", ((e.clientX - r.left) / r.width * 100).toFixed(1) + "%");
+        card.style.setProperty("--my", ((e.clientY - r.top) / r.height * 100).toFixed(1) + "%");
+      });
+    }
+  }
+
+  root.querySelectorAll("[data-hb-jump]").forEach(function(b){
+    b.addEventListener("click", function(){
+      const t = root.querySelector("#" + b.dataset.hbJump);
+      if (t) overlay.scrollTo({top: t.offsetTop - 8, behavior: REDUCE ? "auto" : "smooth"});
+    });
+  });
+
+  const tabs = root.querySelectorAll("[data-hb-tab]");
+  tabs.forEach(function(t){
+    t.addEventListener("click", function(){
+      tabs.forEach(function(o){ o.setAttribute("aria-selected", String(o === t)); });
+      root.querySelectorAll(".hb-panel").forEach(function(pn){ pn.classList.remove("on"); });
+      const panel = root.querySelector("#hb-p-" + t.dataset.hbTab);
+      if (panel){
+        /* restart the row cascade each time a view is opened */
+        panel.querySelectorAll(".hb-row").forEach(function(r){
+          r.style.animation = "none"; void r.offsetWidth; r.style.animation = "";
+        });
+        panel.classList.add("on");
+      }
+    });
+  });
+
+  root.querySelectorAll("[data-hb-walk]").forEach(function(walk){
+    const w = HB_WALKS[+walk.dataset.hbWalk];
+    const scr = walk.querySelector(".hb-phone .scr");
+    const btns = walk.querySelectorAll("[data-hb-step]");
+    btns.forEach(function(b){
+      b.addEventListener("click", function(){
+        btns.forEach(function(o){ o.setAttribute("aria-selected", String(o === b)); });
+        const st = w.steps[+b.dataset.hbStep];
+        scr.innerHTML = hbScreenInner(st[2], st[0]);
+        scr.classList.remove("scr-swap");
+        void scr.offsetWidth;
+        scr.classList.add("scr-swap");
+      });
+    });
+  });
+
+  const pop = root.querySelector("#hb-pop");
+  const picks = root.querySelectorAll("[data-hb-know]");
+  picks.forEach(function(b){
+    b.addEventListener("click", function(){
+      const open = b.getAttribute("aria-expanded") === "true";
+      picks.forEach(function(o){ o.setAttribute("aria-expanded", "false"); });
+      if (open){ pop.classList.remove("on"); return; }
+      const k = HB_KNOW[+b.dataset.hbKnow];
+      pop.querySelector("h3").textContent = k[1];
+      pop.querySelector("p").textContent = k[2];
+      b.setAttribute("aria-expanded", "true");
+      pop.classList.add("on");
+    });
+  });
+
+  const glass = root.querySelector("[data-hb-glass]");
+  if (glass && !REDUCE){
+    glass.addEventListener("pointermove", function(e){
+      const r = glass.getBoundingClientRect();
+      glass.style.setProperty("--mx", ((e.clientX - r.left) / r.width * 100).toFixed(1) + "%");
+      glass.style.setProperty("--my", ((e.clientY - r.top) / r.height * 100).toFixed(1) + "%");
+    });
+  }
+
+  root.querySelectorAll("[data-hb-q]").forEach(function(b){
+    const panel = root.querySelector("#hb-a-" + b.dataset.hbQ);
+    b.setAttribute("aria-controls", panel.id);
+    b.addEventListener("click", function(){
+      const open = b.getAttribute("aria-expanded") === "true";
+      b.setAttribute("aria-expanded", open ? "false" : "true");
+      panel.style.maxHeight = open ? "0px" : panel.scrollHeight + "px";
+    });
+  });
+}
+
+/* Lantern is still being written up, so its page says so plainly and gives
+   the short version rather than an empty scaffold of headings. */
+function lanternCase(){
+  const p = PROJECTS.lantern;
+  let h = '<div class="case-inner cs-lantern">';
+
+  h += '<header class="cs-hero">' + sceneMarkup("lantern", "hero")
+     +   '<div class="cs-head">'
+     +     '<span class="wip-badge"><i aria-hidden="true"></i>In progress</span>'
+     +     '<p class="cs-kicker">' + p.kicker + '</p>'
+     +     '<h1 class="cs-title" id="csTitle">' + p.name + '</h1>'
+     +     '<p class="cs-sub">' + p.sub + '</p>'
+     +   '</div></header>';
+
+  h += '<div class="cs-body">'
+     + '<div class="wip-note">'
+     +   '<span class="mark" aria-hidden="true">&#9788;</span>'
+     +   '<div><h3>This one is still being written.</h3>'
+     +     '<p>The full case study is on its way. Until then, here is what Lantern '
+     +     'is for and where the idea comes from.</p></div>'
+     + '</div>';
+
+  h += '<p class="lan-lead">Career guidance for people who are still working it out — '
+     + '<em>lit one step at a time.</em></p>'
+     + '<div class="lan-body">'
+     +   '<p>Lantern is a career companion for people who have not worked it out yet. '
+     +   'Most tools in this space assume you already know the destination and only need '
+     +   'directions. Lantern assumes you don\'t, and helps you take one honest step anyway.</p>'
+     + '</div>';
+
+  h += '<div class="cs-foot"><button class="inline-cta" type="button" data-back>'
+     + '&larr; Back to shelf</button></div>'
+     + '</div>';
+
+  return h + '</div>';
+}
+
+const CASE_BUILDERS = {hydrabloom: hydrabloomCase, lantern: lanternCase};
+const LIGHT_CASES = {hydrabloom: true};
+
+/* ============================================================
+   8 — GO
+   ============================================================ */
+buildMenu();
+layout();
+requestAnimationFrame(frame);
+/* the rail doubles as a labelled index, so show it without waiting for a drag */
+setTimeout(function(){ rail.classList.add("on"); }, 900);
+let rt;
+window.addEventListener("resize", function(){ clearTimeout(rt); rt = setTimeout(layout, 140); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
+window.addEventListener("load", layout);
+if ("ontouchstart" in window) hint.textContent = "← swipe to explore →";
+
+})();
+</script>
+</body>
+</html>
