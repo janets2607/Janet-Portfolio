@@ -18,6 +18,13 @@
   --amber-soft:#ffcf8d;
   --blossom:#e9a9c0;
 
+  /* HydraBloom palette: the single source of truth. Every yellow, blue and
+     green in the case study (and its shelf nook) is one of these three, a
+     transparent version of it, or a blend of it with white. */
+  --hb-sun:#F6D98A;   --hb-sun-rgb:246,217,138;   /* Sun: pastel yellow */
+  --hb-sky:#A9D8EA;   --hb-sky-rgb:169,216,234;   /* Sky: pastel blue */
+  --hb-earth:#BFDDA8; --hb-earth-rgb:191,221,168; /* Earth: pastel green */
+
   --serif:"Cormorant Garamond", Cormorant, Garamond, "Times New Roman", serif;
   /* the typeface HydraBloom itself is set in */
   --brand:"DynaPuff", "Trebuchet MS", "Segoe UI", sans-serif;
@@ -55,6 +62,10 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .nav > *{pointer-events:auto}
 /* --- profile avatar (doubles as "return to the start of the shelf") --- */
 .brand{
+  /* block, not inline: as an inline button it left a 4px descender gap under
+     the circle, so the wrapper was 44px tall and the circle sat 2px above
+     the centre of the nav row the links are centred on */
+  display:block;
   position:relative; flex:0 0 auto; padding:0; overflow:hidden;
   width:clamp(40px, 4.4vh, 52px); height:clamp(40px, 4.4vh, 52px);
   border-radius:50%;
@@ -88,6 +99,18 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
   background:rgba(239,227,200,.42);
 }
 .brand.has-photo .avatar-ph{display:none}
+/* the graduation photo, framed as a headshot inside the circle. Cover fills
+   the square across the photo's width; object-position then slides the
+   window down to the face (41%), and the scale zooms in 4.17x about the
+   face itself (49% across) — so the circle holds the face, the full
+   crown of hair, and the top of the shoulder and stole. The file itself
+   is untouched. */
+.avatar-img{
+  position:absolute; inset:0; width:100%; height:100%; display:block;
+  object-fit:cover; object-position:50% 41%;
+  transform:scale(4.17); transform-origin:49% 50%;
+  pointer-events:none;
+}
 .brand-wrap{position:relative; flex:0 0 auto}
 /* the avatar breathes until someone opens it, then settles for good.
    Sits on the wrapper so the rings can spread past the clipped circle. */
@@ -104,7 +127,8 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 
 /* --- a word from the person whose shelf this is --- */
 .brand-bubble{
-  position:absolute; top:calc(100% + 14px); left:0; z-index:90;
+  /* 18px below the circle, as before the wrapper lost its 4px gap */
+  position:absolute; top:calc(100% + 18px); left:0; z-index:90;
   width:min(304px, calc(100vw - 40px));
   padding:18px 20px 16px; border-radius:14px;
   background:rgba(18,12,7,.94);
@@ -133,6 +157,94 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
   font-family:var(--sans); color:rgba(239,227,200,.5);
 }
 
+/* --- a recommendation slip: a small library card rather than a web form --- */
+.rec .sig{color:var(--amber-soft); opacity:.82}
+.rec p{margin-bottom:14px}
+.rec-field{display:block; margin-top:11px}
+.rec-label{
+  display:block; margin-bottom:6px;
+  font-size:9px; letter-spacing:.22em; text-transform:uppercase; color:rgba(239,227,200,.5);
+}
+.rec-label i{font-style:normal; letter-spacing:.14em; text-transform:none; color:rgba(239,227,200,.34)}
+/* the fields sit in the card like ruled lines on a slip: faint fill, thin
+   warm-gold edge, brighter only when written in */
+.rec-input{
+  display:block; width:100%; margin:0; padding:9px 11px;
+  border-radius:8px; border:1px solid rgba(198,150,90,.28);
+  background:rgba(255,236,204,.035);
+  color:rgba(246,238,218,.94); caret-color:var(--amber-soft);
+  outline:none; resize:none; -webkit-appearance:none; appearance:none;
+  transition:border-color .3s var(--ease), background .3s var(--ease), box-shadow .3s var(--ease);
+}
+.rec-book{font-family:var(--serif); font-size:16px; font-style:italic; line-height:1.3}
+.rec-note{font-family:var(--sans); font-size:12.5px; line-height:1.6; min-height:58px}
+.rec-input::placeholder{color:rgba(239,227,200,.3)}
+.rec-input:hover{border-color:rgba(198,150,90,.42)}
+.rec-input:focus{
+  border-color:rgba(255,207,141,.62); background:rgba(255,236,204,.06);
+  box-shadow:0 0 0 3px rgba(255,190,110,.09);
+}
+/* an empty title gets a soft nudge rather than an error message */
+.rec-input.need{border-color:rgba(255,207,141,.75); animation:recNudge .42s var(--ease)}
+@keyframes recNudge{0%,100%{transform:none}25%{transform:translateX(-3px)}60%{transform:translateX(3px)}}
+.rec-send{
+  display:inline-flex; align-items:center; gap:8px; margin-top:15px;
+  font-size:10.5px; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--amber-soft); border-bottom:1px solid rgba(255,207,141,.4); padding:0 0 6px;
+  transition:border-color .4s var(--ease), color .4s var(--ease);
+}
+.rec-send span{display:inline-block; transition:transform .4s var(--ease)}
+.rec-send:hover{border-color:var(--amber-soft); color:#ffe1b4}
+.rec-send:hover span{transform:translateX(4px)}
+.rec-send:focus-visible{outline:2px solid var(--amber-soft); outline-offset:4px}
+
+/* --- once sent: the slip fades, and a new spine slides onto a tiny shelf --- */
+.rec.leaving{opacity:0; transform:translateY(-4px); transition:opacity .22s ease, transform .22s ease}
+.rec-done{text-align:center; padding:6px 0 2px}
+.rec-shelf{
+  position:relative; width:128px; height:52px; margin:4px auto 14px;
+  display:flex; align-items:flex-end; justify-content:center; gap:2px;
+}
+.rec-board{
+  position:absolute; left:-6px; right:-6px; bottom:-5px; height:5px; border-radius:1px;
+  background:linear-gradient(to bottom, #b47c42, #6b4520 60%, #2a190b);
+  box-shadow:0 3px 8px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,226,180,.5);
+}
+.rb{
+  display:block; position:relative; border-radius:2px 2px 1px 1px;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.35), inset -2px 0 4px rgba(0,0,0,.45);
+}
+.rb::after{ /* a gilt band across the spine */
+  content:""; position:absolute; left:18%; right:18%; top:22%; height:2px;
+  background:rgba(255,214,150,.55);
+}
+.rb1{width:11px; height:40px; background:linear-gradient(90deg,#3a1d18,#6d3326 45%,#3a1d18)}
+.rb2{width:9px;  height:46px; background:linear-gradient(90deg,#1c2530,#34485c 45%,#1c2530)}
+.rb3{width:12px; height:36px; background:linear-gradient(90deg,#2a2716,#57502a 45%,#2a2716)}
+.rb4{width:10px; height:43px; background:linear-gradient(90deg,#2b1a10,#5c3a1f 45%,#2b1a10)}
+/* the recommendation itself: a brighter gilt volume that slides in from
+   the right and settles upright into the gap left for it */
+.rb-new{
+  width:13px; height:48px;
+  background:linear-gradient(90deg,#6b4a1a,#c8963e 45%,#6b4a1a);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.3), inset -2px 0 4px rgba(0,0,0,.35),
+             0 0 12px rgba(255,190,110,.35);
+  transform-origin:bottom left;
+}
+.rb-new::after{background:rgba(255,236,190,.85)}
+.rec-done.play .rb-new{animation:recSlide .62s cubic-bezier(.22,1,.36,1) .12s both}
+@keyframes recSlide{
+  0%  {transform:translateX(70px) rotate(8deg); opacity:0}
+  55% {opacity:1}
+  80% {transform:translateX(-2px) rotate(-1.5deg)}
+  100%{transform:none; opacity:1}
+}
+.rec-done.play .rec-shelf{animation:recFade .3s ease both}
+.brand-bubble .rec-thanks{margin:0; font-family:var(--serif); font-size:16px; font-style:italic; line-height:1.5; color:rgba(246,238,218,.9)}
+.rec-thanks .sig{margin-bottom:6px; font-style:normal; color:var(--amber-soft); opacity:.85}
+.rec-done.play .rec-thanks{animation:recFade .4s ease .62s both}
+@keyframes recFade{from{opacity:0; transform:translateY(3px)} to{opacity:1; transform:none}}
+
 .nav-links{display:flex; gap:clamp(16px,2.6vw,34px)}
 .nav-link{
   font-size:11.5px; font-weight:500; letter-spacing:.22em; text-transform:uppercase;
@@ -146,6 +258,7 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
   background:var(--amber-soft); transform:scaleX(0); transform-origin:left;
   transition:transform .45s var(--ease);
 }
+a.nav-link{text-decoration:none; cursor:pointer}
 .nav-link:hover, .nav-link[aria-current="true"], .nav-link[aria-expanded="true"]{color:rgba(241,231,208,1)}
 .nav-link:hover::after, .nav-link[aria-current="true"]::after,
 .nav-link[aria-expanded="true"]::after{transform:scaleX(1)}
@@ -491,6 +604,95 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
     linear-gradient(-45deg, transparent calc(50% - .6px), rgba(0,0,0,.35) 50%, transparent calc(50% + .6px)) bottom left / 20px 20px no-repeat,
     linear-gradient(45deg,  transparent calc(50% - .6px), rgba(0,0,0,.35) 50%, transparent calc(50% + .6px)) bottom right/ 20px 20px no-repeat;
 }
+/* HydraBloom: the casing is built into the shelf rather than standing in
+   front of it. Its top follows the arch at the trim's own width (arch radius
+   plus the 14px / 12px inset), so only a curved band of wood rings the
+   opening and the back panel shows where the square corners used to be.
+   The top mitres go with the corners; the bottom joins stay. */
+.nook[data-project="hydrabloom"] .nook-frame,
+.nook[data-project="lantern"] .nook-frame{border-radius:92px 92px 3px 3px / 90px 90px 3px 3px}
+.nook[data-project="hydrabloom"] .nook-mitre,
+.nook[data-project="lantern"] .nook-mitre{
+  background:
+    linear-gradient(-45deg, transparent calc(50% - .6px), rgba(0,0,0,.35) 50%, transparent calc(50% + .6px)) bottom left / 20px 20px no-repeat,
+    linear-gradient(45deg,  transparent calc(50% - .6px), rgba(0,0,0,.35) 50%, transparent calc(50% + .6px)) bottom right/ 20px 20px no-repeat;
+}
+
+/* HydraBloom at rest: no light leaves the nook. The breathing halo, the
+   casing's outer glow, the lip glow and the spill across the neighbouring
+   books are all off, and the scene sits a touch dimmer, in the shelf's own
+   warm half-light. */
+.nook[data-project="hydrabloom"]::before, .nook[data-project="lantern"]::before{content:none}
+.nook[data-project="hydrabloom"] .spill, .nook[data-project="lantern"] .spill{display:none}
+.nook[data-project="hydrabloom"] .nook-frame,
+.nook[data-project="lantern"] .nook-frame{box-shadow:
+  0 0 0 1px rgba(0,0,0,.55),
+  inset 0 1px 0 rgba(255,214,160,.3),
+  inset 0 -2px 5px rgba(0,0,0,.65),
+  0 14px 36px rgba(0,0,0,.7)}
+.nook[data-project="hydrabloom"] .nook-lip,
+.nook[data-project="lantern"] .nook-lip{
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.55),
+    inset 0 1.6px 0 rgba(255,224,180,.36),
+    inset 1.6px 0 0 rgba(255,216,168,.15),
+    inset -1.6px 0 0 rgba(0,0,0,.42),
+    inset 0 -2px 0 rgba(0,0,0,.5),
+    inset 0 0 15px 2px rgba(255,190,110,0);
+  transition:box-shadow .9s var(--ease);
+}
+.nook[data-project="hydrabloom"] .art-img{
+  filter:brightness(.88) saturate(.92);
+  transition:filter .9s var(--ease);
+}
+/* the bloom lives inside the arch, centred on the lamp and the sunlit
+   window, and is clipped by the opening like everything else in it */
+.nook[data-project="hydrabloom"] .art-crop::before{
+  content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:radial-gradient(ellipse 85% 62% at 50% 34%,
+    rgba(255,222,160,.42), rgba(255,196,120,.14) 52%, rgba(255,190,110,0) 78%);
+  mix-blend-mode:screen; opacity:0;
+  transition:opacity .9s var(--ease);
+}
+/* on hover the little room lights up from within: the scene warms and
+   brightens, the bloom rises, and the light catches the inside of the arch */
+.nook[data-project="hydrabloom"]:hover .art-img,
+.nook[data-project="hydrabloom"]:focus-visible .art-img{
+  filter:brightness(1.08) saturate(1.14) sepia(.07);
+}
+.nook[data-project="hydrabloom"]:hover .art-crop::before,
+.nook[data-project="hydrabloom"]:focus-visible .art-crop::before{opacity:1}
+.nook[data-project="hydrabloom"]:hover .nook-lip,
+.nook[data-project="hydrabloom"]:focus-visible .nook-lip,
+.nook[data-project="lantern"]:hover .nook-lip,
+.nook[data-project="lantern"]:focus-visible .nook-lip{
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.55),
+    inset 0 1.6px 0 rgba(255,224,180,.36),
+    inset 1.6px 0 0 rgba(255,216,168,.15),
+    inset -1.6px 0 0 rgba(0,0,0,.42),
+    inset 0 -2px 0 rgba(0,0,0,.5),
+    inset 0 0 16px 3px rgba(255,196,120,.42);
+}
+
+/* Lantern: the same built-in nook. Its scene is a gradient rather than a
+   picture, so the dim-at-rest / lit-from-within lighting sits on the scene
+   itself, with the same bloom inside the arch (the travel copy uses it too) */
+.nook[data-project="lantern"] .sc-ember{
+  filter:brightness(.88) saturate(.92);
+  transition:filter .9s var(--ease);
+}
+.nook[data-project="lantern"] .sc-ember::after, .nook-travel .sc-ember::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(ellipse 85% 62% at 50% 34%,
+    rgba(255,222,160,.42), rgba(255,196,120,.14) 52%, rgba(255,190,110,0) 78%);
+  mix-blend-mode:screen; opacity:0;
+  transition:opacity .9s var(--ease);
+}
+.nook[data-project="lantern"]:hover .sc-ember,
+.nook[data-project="lantern"]:focus-visible .sc-ember{filter:brightness(1.08) saturate(1.14)}
+.nook[data-project="lantern"]:hover .sc-ember::after,
+.nook[data-project="lantern"]:focus-visible .sc-ember::after{opacity:1}
 
 .scene{position:absolute; inset:0; overflow:hidden}
 
@@ -501,6 +703,16 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
   width:100%; height:100%;
   object-fit:cover; object-position:var(--art-pos, center);
 }
+.art-crop{container-type:size}
+/* at least as wide and as tall as the opening, at the crop's own ratio, so
+   it always covers without stretching; the overflow is clipped by the arch */
+.art-box{
+  position:absolute; left:50%; top:50%;
+  width:max(100cqw, 100cqh * var(--crop-ratio));
+  aspect-ratio:var(--crop-ratio);
+  transform:translate(-50%,-50%);
+}
+.art-crop .art-img{inset:auto; max-width:none; object-fit:fill}
 .sc-art::after{
   content:""; position:absolute; inset:0; pointer-events:none;
   box-shadow:inset 0 0 34px rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.35);
@@ -557,24 +769,24 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 
 /* ---------- HYDRABLOOM: a slow wash of yellow, blue and green ---------- */
 .sc-flow{
-  background:linear-gradient(172deg, #ffdf94 0%, #ffeab6 18%, #b6dff0 46%, #a6d5e6 60%, #c3e5a4 84%, #a8d382 100%);
+  background:linear-gradient(172deg, var(--hb-sun) 0%, color-mix(in srgb, var(--hb-sun) 70%, #fff) 18%, color-mix(in srgb, var(--hb-sky) 80%, #fff) 46%, var(--hb-sky) 60%, color-mix(in srgb, var(--hb-earth) 80%, #fff) 84%, var(--hb-earth) 100%);
   background-size:100% 240%;
   animation:flowSlide 19s ease-in-out infinite alternate;
 }
 .sc-flow span{position:absolute; border-radius:50%; filter:blur(16px); pointer-events:none}
 .flow-a{
   width:170%; height:56%; left:-34%; top:-14%;
-  background:radial-gradient(circle, rgba(255,228,150,.95), rgba(255,228,150,0) 68%);
+  background:radial-gradient(circle, rgba(var(--hb-sun-rgb),.95), rgba(var(--hb-sun-rgb),0) 68%);
   animation:flowA 15s ease-in-out infinite alternate;
 }
 .flow-b{
   width:180%; height:60%; left:-40%; top:26%;
-  background:radial-gradient(circle, rgba(168,216,238,.92), rgba(168,216,238,0) 68%);
+  background:radial-gradient(circle, rgba(var(--hb-sky-rgb),.92), rgba(var(--hb-sky-rgb),0) 68%);
   animation:flowB 21s ease-in-out infinite alternate;
 }
 .flow-c{
   width:170%; height:58%; left:-30%; top:56%;
-  background:radial-gradient(circle, rgba(192,228,160,.92), rgba(192,228,160,0) 68%);
+  background:radial-gradient(circle, rgba(var(--hb-earth-rgb),.92), rgba(var(--hb-earth-rgb),0) 68%);
   animation:flowC 17s ease-in-out infinite alternate;
 }
 .flow-sheen{
@@ -676,6 +888,14 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .v-scroll-wrap:not(.can-scroll) .v-scroll{
   -webkit-mask-image:none; mask-image:none; padding-right:0;
 }
+/* About's fade trimmed to a hairline at each edge so it signals "more below"
+   without dimming the text itself — hero's fade is untouched. */
+.panel-sec .v-scroll{
+  -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 6px,
+                     #000 calc(100% - 6px), transparent 100%);
+  mask-image:linear-gradient(to bottom, transparent 0, #000 6px,
+                     #000 calc(100% - 6px), transparent 100%);
+}
 .v-scroll::-webkit-scrollbar{width:6px}
 .v-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,.08); border-radius:3px}
 .v-scroll::-webkit-scrollbar-thumb{
@@ -715,6 +935,21 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .panel-sec  .v-scroll{--sh:clamp(78px, 16vh, 184px)}
 .panel-hero .lede{max-width:min(100%, 46ch); font-size:clamp(12px, min(1.05vw, 1.75vh), 16px); line-height:1.7}
 .panel-sec  .lede{max-width:min(100%, 50ch); font-size:clamp(11.5px, min(.95vw, 1.6vh), 15px); line-height:1.72}
+/* the hero reads as four blocks — eyebrow, name, statement, call to action —
+   with ONE gap between each, measured box to box. The call to action is a
+   block here (as wide as its label) so no line-box leading sneaks in above it. */
+.panel-hero .v-copy{--hero-gap:clamp(14px, 2.4vh, 26px)}
+.panel-hero .eyebrow{margin-bottom:var(--hero-gap)}
+.panel-hero .v-scroll-wrap{margin-top:var(--hero-gap)}
+.panel-hero .inline-cta{display:block; width:fit-content; margin-top:var(--hero-gap)}
+/* the statement is set in the UI sans, so the serif belongs to the name alone */
+.panel-hero .lede.hero-line{
+  max-width:min(100%, 40ch);
+  font-family:var(--sans); font-weight:300;
+  font-size:clamp(13px, min(1.3vw, 2.2vh), 18px); line-height:1.55; letter-spacing:0;
+  color:rgba(246,236,214,.86); text-wrap:balance;
+}
+.hero-line span{display:block}
 .inline-cta{
   display:inline-block; margin-top:clamp(12px, 2.2vh, 26px);
   font-size:clamp(9px, .82vw, 11.5px); letter-spacing:.2em; text-transform:uppercase;
@@ -774,6 +1009,57 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 #overlay{position:fixed; inset:0; z-index:100; overflow-y:auto; overflow-x:hidden;
   background:#0a0a10; will-change:transform}
 #overlay[hidden]{display:none}
+
+/* ---- entering a nook -------------------------------------------------------
+   A copy of the nook's picture, laid out at its FINAL full-screen size (so it
+   is rasterised once, sharp) and shrunk by transform to sit exactly over the
+   arch. The entry plays that transform back to identity. Only transform and
+   opacity are animated; the shelf underneath never moves. */
+.nook-travel{
+  position:fixed; z-index:130; overflow:hidden; pointer-events:auto;
+  transform-origin:50% 50%; will-change:transform, opacity;
+  backface-visibility:hidden; contain:strict;
+}
+/* the picture wears the nook's lit hover state, which is what was on screen
+   at the moment of the click */
+.nook-travel .art-img{filter:brightness(1.08) saturate(1.14) sepia(.07)}
+.nook-travel .art-crop::before{
+  content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:radial-gradient(ellipse 85% 62% at 50% 34%,
+    rgba(255,222,160,.42), rgba(255,196,120,.14) 52%, rgba(255,190,110,0) 78%);
+  mix-blend-mode:screen;
+}
+/* px-based inner shadows would not scale with the copy; the gradient does */
+.nook-travel .sc-art::after{box-shadow:none}
+/* a gradient scene copied at full size, lit like the hovered nook. Its
+   light pools are already radial gradients that fade to nothing, so the copy
+   drops their blur: scaled up to full screen it cost a dropped frame, and at
+   nook size the difference is invisible */
+.nook-travel .sc-ember{filter:brightness(1.08) saturate(1.14)}
+.nook-travel .sc-ember::after{opacity:1; transition:none}
+.nook-travel .sc-ember span{filter:none}
+/* the handoff: pure white over absolutely everything — shelf, the garden's
+   edges, the case study and its scrollbar. The page is switched while this
+   is fully opaque, then the veil lifts to reveal it. */
+.nook-veil{
+  position:fixed; top:0; left:0; width:100vw; height:100vh; height:100dvh;
+  z-index:2147483000; border-radius:0; background:#fff;
+  pointer-events:auto; opacity:0; will-change:opacity;
+}
+/* Lantern's wash: dusk settling toward night over the gradient */
+.nook-wash.dark{
+  background:linear-gradient(165deg,
+    rgba(26,14,30,.52) 0%, rgba(10,8,16,.66) 48%, rgba(0,0,0,.6) 100%);
+}
+/* the soft pastel wash that settles over the garden as it fills the screen */
+.nook-wash{
+  position:fixed; inset:0; z-index:131; pointer-events:auto; opacity:0;
+  will-change:opacity;
+  background:linear-gradient(165deg,
+    rgba(var(--hb-sky-rgb),.5) 0%, rgba(255,250,236,.58) 48%, rgba(var(--hb-earth-rgb),.46) 100%);
+}
+/* under the entry layer the case study is simply present, no fade of its own */
+#overlay.dream-in .case-inner{transition:none; opacity:1}
 .case-inner{opacity:0; transition:opacity .55s var(--ease) .3s}
 #overlay.shown .case-inner{opacity:1}
 .cs-hero{position:relative; height:66vh; min-height:360px; display:flex; align-items:flex-end;
@@ -871,36 +1157,61 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 #overlay.light{background:#ffffff}
 
 .cs-hydra{
-  --sun:#ffc24d; --sun-soft:#ffdb95; --sun-pale:#fff4da;
-  --sky:#5fb0da; --sky-soft:#a5d8f2; --sky-pale:#e4f3fb;
-  --leaf:#6ba348; --leaf-soft:#a9ce7c; --leaf-pale:#eaf5dc;
+  /* the case study's one vertical section rhythm: every section pads its
+     top and bottom by this, so two sections meet across twice this */
+  --hb-sec-y:clamp(76px,13vh,164px);
+  /* each hue is the base colour from :root, then blended toward white for
+     larger surfaces. Nothing here introduces a new yellow, blue or green. */
+  --sun:var(--hb-sun);
+  --sun-soft:color-mix(in srgb, var(--hb-sun) 70%, #fff);
+  --sun-light:color-mix(in srgb, var(--hb-sun) 45%, #fff);
+  --sun-pale:color-mix(in srgb, var(--hb-sun) 25%, #fff);
+  --sun-mist:color-mix(in srgb, var(--hb-sun) 12%, #fff);
+  --sky:var(--hb-sky);
+  --sky-soft:color-mix(in srgb, var(--hb-sky) 70%, #fff);
+  --sky-light:color-mix(in srgb, var(--hb-sky) 45%, #fff);
+  --sky-pale:color-mix(in srgb, var(--hb-sky) 25%, #fff);
+  --sky-mist:color-mix(in srgb, var(--hb-sky) 12%, #fff);
+  --earth:var(--hb-earth);
+  --earth-soft:color-mix(in srgb, var(--hb-earth) 70%, #fff);
+  --earth-light:color-mix(in srgb, var(--hb-earth) 45%, #fff);
+  --earth-pale:color-mix(in srgb, var(--hb-earth) 25%, #fff);
+  --earth-mist:color-mix(in srgb, var(--hb-earth) 12%, #fff);
+  /* text and hairline details only: the same OKLCH hue and chroma as each
+     base, with lightness lowered to .52 so small type, hover states and
+     1px strokes pass 4.5:1 on white */
+  --sun-ink:#806509; --sky-ink:#447080; --earth-ink:#587242;
+  /* large display type only: the same OKLCH hue as each base, lowered just
+     enough to read at headline size (L .78 sun, .74 sky/earth) with chroma
+     lifted 1.3x so they stay fresh rather than drifting grey */
+  --sun-glow:#d9b343; --sky-glow:#78b5cc; --earth-glow:#93b875;
   --hb-ink:#22302a; --hb-soft:#5b6b62; --hb-line:rgba(34,48,42,.12);
   position:relative; font-family:var(--sans); color:var(--hb-ink);
   /* one unbroken pass down the page: white, yellow, blue, green, white.
      0-13% sits behind the hero, so the visible run starts from the wave. */
   background:linear-gradient(180deg,
     #ffffff 0%, #ffffff 15%,
-    #fff8e4 23%, #ffefc4 32%, #fdf3d2 39%,
-    #f2f5f8 46%,
-    #ddeef9 54%, #c7e3f5 62%, #dcf0f2 69%,
-    #e6f4e6 76%,
-    #ddf0ca 83%, #cae7ac 89%,
-    #e9f5df 95%, #ffffff 100%);
+    var(--sun-pale) 23%, var(--sun-light) 32%, var(--sun-pale) 39%,
+    var(--sky-mist) 46%,
+    var(--sky-light) 54%, var(--sky-soft) 62%, var(--sky-light) 69%,
+    var(--earth-pale) 76%,
+    var(--earth-light) 83%, var(--earth-soft) 89%,
+    var(--earth-mist) 95%, #ffffff 100%);
 }
 .hb-aura{position:absolute; border-radius:50%; pointer-events:none; filter:blur(90px); opacity:.5; z-index:1}
 
 .hb-track{position:fixed; top:0; left:0; right:0; height:3px; z-index:115; background:rgba(34,48,42,.07)}
 .hb-fill{height:100%; width:calc(var(--scroll,0) * 100%);
-  background:linear-gradient(90deg, var(--sun), var(--sky) 54%, var(--leaf))}
+  background:linear-gradient(90deg, var(--sun), var(--sky) 54%, var(--earth))}
 .hb-sun{
   position:fixed; top:1.5px; left:calc(var(--scroll,0) * 100%); z-index:116;
   width:15px; height:15px; margin:-7.5px 0 0 -7.5px; border-radius:50%;
-  background:radial-gradient(circle at 38% 34%, #fffbee, var(--sun) 62%, #eda32c);
-  box-shadow:0 0 0 4px rgba(255,194,77,.25), 0 2px 10px rgba(237,163,44,.5);
+  background:radial-gradient(circle at 38% 34%, var(--sun-mist), var(--sun-soft) 45%, var(--sun) 100%);
+  box-shadow:0 0 0 4px rgba(var(--hb-sun-rgb),.35), 0 2px 10px rgba(var(--hb-sun-rgb),.8);
 }
 
 /* --- shared --- */
-.hb-sec{position:relative; z-index:3; padding:clamp(76px,13vh,164px) clamp(20px,7vw,96px)}
+.hb-sec{position:relative; z-index:3; padding:var(--hb-sec-y) clamp(20px,7vw,96px)}
 .hb-sec > *{max-width:1180px; margin-inline:auto}
 .hb-eyebrow{font-size:10.5px; letter-spacing:.34em; text-transform:uppercase;
   color:var(--hb-soft); margin:0 0 22px}
@@ -935,7 +1246,7 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 }
 .hb-phone .scr{
   width:100%; height:100%; border-radius:11% / 5.06%; overflow:hidden; position:relative;
-  background:linear-gradient(to bottom, var(--sky-pale), var(--sun-pale) 54%, var(--leaf-pale));
+  background:linear-gradient(to bottom, var(--sky-pale), var(--sun-pale) 54%, var(--earth-pale));
   display:flex; align-items:center; justify-content:center;
 }
 .hb-phone .scr img{width:100%; height:100%; object-fit:cover; display:block}
@@ -964,10 +1275,10 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .hb-hero{
   position:relative; z-index:3; min-height:100vh; min-height:100svh; overflow:hidden;
   display:flex; align-items:center; justify-content:center;
-  gap:clamp(18px,3vw,56px);
+  gap:clamp(26px,3vw,56px);
   padding:clamp(80px,12vh,140px) clamp(20px,6vw,86px) clamp(130px,19vh,220px);
   background:linear-gradient(132deg,
-    #fbe3a8 0%, #f7ecba 16%, #ddedc8 36%, #cbe7d8 56%, #c6dcef 78%, #d8eaf8 100%);
+    var(--sun-soft) 0%, var(--sun-light) 16%, var(--earth-light) 36%, var(--earth-soft) 56%, var(--sky-soft) 78%, var(--sky-light) 100%);
   /* oversized so there is room to slide the whole wash around */
   background-size:220% 220%;
   animation:hbSwell 38s ease-in-out infinite alternate;
@@ -985,17 +1296,17 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .hb-tide{position:absolute; z-index:1; pointer-events:none}
 .hb-tide.t1{
   left:-16%; top:-22%; width:66%; height:74%; opacity:.55;
-  background:radial-gradient(closest-side circle, #ffe9be, rgba(255,233,190,.55) 42%, rgba(255,233,190,0) 78%);
+  background:radial-gradient(closest-side circle, var(--sun-soft), rgba(var(--hb-sun-rgb),.4) 42%, rgba(var(--hb-sun-rgb),0) 78%);
   animation:hbTide1 26s ease-in-out infinite alternate;
 }
 .hb-tide.t2{
   right:-20%; top:6%; width:72%; height:80%; opacity:.5;
-  background:radial-gradient(closest-side circle, #c6dcef, rgba(198,220,239,.55) 42%, rgba(198,220,239,0) 78%);
+  background:radial-gradient(closest-side circle, var(--sky-soft), rgba(var(--hb-sky-rgb),.4) 42%, rgba(var(--hb-sky-rgb),0) 78%);
   animation:hbTide2 31s ease-in-out infinite alternate;
 }
 .hb-tide.t3{
   left:8%; bottom:-30%; width:74%; height:76%; opacity:.5;
-  background:radial-gradient(closest-side circle, #d5eab9, rgba(213,234,185,.55) 42%, rgba(213,234,185,0) 78%);
+  background:radial-gradient(closest-side circle, var(--earth-soft), rgba(var(--hb-earth-rgb),.4) 42%, rgba(var(--hb-earth-rgb),0) 78%);
   animation:hbTide3 37s ease-in-out infinite alternate;
 }
 .hb-tide.t4{
@@ -1009,8 +1320,8 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 @keyframes hbTide4{from{transform:translate(5%,-4%)  scale(1.1)} to{transform:translate(-8%,8%)  scale(1)}}
 /* the wash is pale now, so the copy carries ink rather than white */
 .hb-hero-copy{
-  position:relative; z-index:4; color:var(--hb-ink);
-  flex:0 1 min(40%, 500px);
+  position:relative; z-index:4; color:var(--hb-ink); min-width:0;
+  flex:0 1 min(43%, 580px);
 }
 .hb-mark{
   width:clamp(64px,6vw,92px); aspect-ratio:1; border-radius:26%;
@@ -1021,14 +1332,17 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .hb-mark i{
   position:absolute; left:50%; top:46%; width:34%; height:40%;
   transform:translate(-50%,-50%) rotate(-2deg);
-  background:linear-gradient(to bottom, var(--sky-soft), #3f9d86);
+  background:linear-gradient(to bottom, var(--sky-soft), var(--sky));
   border-radius:50% 50% 50% 50% / 62% 62% 38% 38%;
 }
 .hb-mark b{
   position:absolute; right:24%; top:26%; width:16%; height:14%;
-  border-radius:70% 10% 70% 10%; background:var(--leaf-soft);
+  border-radius:70% 10% 70% 10%; background:var(--earth);
 }
 .hb-mark.has-icon i, .hb-mark.has-icon b{display:none}
+/* the source artwork sits inset within a transparent canvas — zoom past
+   that margin so the icon reads edge-to-edge with no border showing */
+.hb-mark.has-icon{background-size:140% 140%; background-position:center}
 
 /* the wordmark is HydraBloom's logotype rather than a heading in this
    document, so it is set in the product's own face */
@@ -1042,7 +1356,7 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 /* the same face, weight, and colour as every lead paragraph on the page */
 /* same face, weight, size and colour as the body copy through the page */
 .hb-desc{
-  margin:clamp(18px,3vh,30px) 0 0; max-width:34ch;
+  margin:clamp(18px,3vh,30px) 0 0; max-width:58ch; white-space:nowrap;
   font-family:var(--sans); font-weight:400;
   font-size:clamp(13.5px, min(1.35vw, 1.9vh), 18px); line-height:1.78;
   color:var(--hb-soft);
@@ -1066,7 +1380,7 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 /* sits beside the copy as a flex item, so the two travel together and the
    pair stays centred as a group rather than pinned to the right edge */
 .hb-cluster{
-  position:relative; align-self:stretch;
+  position:relative; align-self:stretch; min-width:0;
   flex:0 1 min(46%, 620px);
   z-index:3; pointer-events:none;
 }
@@ -1080,10 +1394,13 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
    210px stops them ballooning on very large displays. */
 .hb-cluster .pod{
   position:absolute; pointer-events:auto;
-  width:min(32%, 21vh, 210px);
+  width:min(29%, 19vh, 190px);
   aspect-ratio:var(--ios); height:auto;
   animation:hbBob 8s ease-in-out infinite;
 }
+/* the centre screen — starting screen.png — is the focal phone: slightly
+   larger and, via its higher z-index below, standing in front of the pair */
+.hb-cluster .p2{width:min(35%, 23.5vh, 232px)}
 /* height drives the phone; the aspect ratio gives back the width */
 .hb-cluster .hb-phone{
   height:100%; width:auto;
@@ -1102,7 +1419,7 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .hb-cluster .pod{left:50%; top:50%}
 .hb-cluster .p1{
   z-index:3;
-  transform:translate(-137%, -64%) rotate(-13deg);
+  transform:translate(-151%, -64%) rotate(-13deg);
   animation-delay:-.4s;
 }
 .hb-cluster .p2{
@@ -1112,7 +1429,7 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 }
 .hb-cluster .p3{
   z-index:2;
-  transform:translate(37%, -58%) rotate(12deg);
+  transform:translate(41%, -58%) rotate(12deg);
   animation-delay:-6s;
 }
 /* the only pointer response left: a gentle lift and a pass of glare */
@@ -1126,11 +1443,11 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .scr-deco{position:absolute; inset:0; overflow:hidden}
 .scr-deco i{position:absolute; border-radius:50%; filter:blur(15px); opacity:.75}
 .scr-deco i:nth-of-type(1){width:150%; height:44%; left:-28%; top:-10%;
-  background:radial-gradient(circle, #ffe2a6, rgba(255,226,166,0) 70%)}
+  background:radial-gradient(circle, var(--sun), rgba(var(--hb-sun-rgb),0) 70%)}
 .scr-deco i:nth-of-type(2){width:160%; height:48%; left:-34%; top:28%;
-  background:radial-gradient(circle, #bfe0f2, rgba(191,224,242,0) 70%)}
+  background:radial-gradient(circle, var(--sky), rgba(var(--hb-sky-rgb),0) 70%)}
 .scr-deco i:nth-of-type(3){width:150%; height:46%; left:-24%; bottom:-12%;
-  background:radial-gradient(circle, #cfe8b4, rgba(207,232,180,0) 70%)}
+  background:radial-gradient(circle, var(--earth), rgba(var(--hb-earth-rgb),0) 70%)}
 .scr-deco::before, .scr-deco::after{
   content:""; position:absolute; border-radius:50%; border:1.5px solid rgba(255,255,255,.6);
 }
@@ -1157,20 +1474,28 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .hb-chapters li{border-bottom:1px solid var(--hb-line)}
 .hb-chapters button{display:block; width:100%; text-align:left; padding:28px 4px;
   transition:color .3s var(--ease), padding-left .3s var(--ease)}
-.hb-chapters button:hover{color:var(--leaf); padding-left:12px}
+.hb-chapters button:hover{color:var(--earth-ink); padding-left:12px}
 .hb-chapters .n{display:block; font-size:11px; letter-spacing:.24em; color:var(--hb-soft); margin-bottom:10px}
 .hb-chapters .t{display:block; font-family:var(--serif); font-size:20px; line-height:1.3}
 
 .hb-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(262px,1fr));
   gap:clamp(16px,2vw,26px); margin-top:clamp(40px,6vh,68px)}
-.hb-card{padding:clamp(26px,3vw,36px); border-radius:16px;
-  background:rgba(255,255,255,.74); border:1px solid rgba(255,255,255,.9);
-  box-shadow:0 18px 40px -22px rgba(32,58,78,.4)}
-.hb-card h3{margin:0 0 14px; font-size:10px; letter-spacing:.24em; text-transform:uppercase; color:var(--hb-soft)}
-.hb-card p{margin:0; font-size:15px; line-height:1.75; color:var(--hb-soft)}
+.hb-card{position:relative; overflow:hidden; padding:clamp(28px,3.2vw,38px) clamp(26px,3vw,36px);
+  border-radius:18px;
+  background:linear-gradient(165deg,
+    color-mix(in srgb, var(--tint, #fff) 13%, #fff) 0%, rgba(255,255,255,.76) 62%);
+  border:1px solid color-mix(in srgb, var(--tint, #fff) 24%, rgba(255,255,255,.9));
+  box-shadow:0 20px 44px -26px rgba(32,58,78,.42);
+  transition:transform .4s var(--ease), box-shadow .4s var(--ease);}
+.hb-card:hover{transform:translateY(-3px); box-shadow:0 26px 52px -26px rgba(32,58,78,.5)}
+.hb-card .rule{position:relative; display:block; width:26px; height:3px; border-radius:2px;
+  margin:0 0 16px; background:var(--tint, var(--hb-ink))}
+.hb-card h3{position:relative; margin:0 0 12px; font-size:10.5px; letter-spacing:.26em;
+  text-transform:uppercase; color:var(--hb-soft)}
+.hb-card p{position:relative; margin:0; font-size:15px; line-height:1.75; color:var(--hb-soft); max-width:36ch}
 
 /* --- research: three views, one row style --- */
-.hb-tabs{display:flex; flex-wrap:wrap; gap:8px; margin:clamp(34px,5vh,54px) 0 0}
+.hb-tabs{display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin:clamp(64px,9vh,104px) 0 0}
 .hb-tabs button{padding:13px 24px; border-radius:999px; font-size:12px; letter-spacing:.13em;
   text-transform:uppercase; color:var(--hb-soft);
   background:rgba(255,255,255,.6); border:1px solid rgba(255,255,255,.9);
@@ -1178,7 +1503,7 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .hb-tabs button:hover{background:#fff}
 .hb-tabs button[aria-selected="true"]{background:var(--hb-ink); color:#fff; border-color:var(--hb-ink);
   box-shadow:0 12px 26px -12px rgba(34,48,42,.7)}
-.hb-panel{display:none; margin-top:clamp(26px,4vh,44px)}
+.hb-panel{display:none; margin-top:clamp(40px,6vh,64px)}
 .hb-panel.on{display:block}
 .hb-stack{display:grid; gap:12px}
 .hb-row{
@@ -1200,22 +1525,26 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .hb-row p + p{margin-top:8px}
 .hb-row b{color:var(--hb-ink); font-weight:600}
 
-/* --- the introducing card --- */
-.hb-intro{position:relative; z-index:3; padding:clamp(60px,10vh,130px) clamp(20px,7vw,96px)}
-.hb-intro-wrap{max-width:1180px; margin-inline:auto; perspective:1400px}
+/* --- the introducing banner --- */
+/* the reveal moment: everything above explains the work, this is the turn
+   where the product itself appears. It runs edge to edge as a wide
+   editorial band, washed in the same sun/earth/sky atmosphere the rest of
+   the case study is built from */
+/* the banner stands alone between sections: its own section padding plus
+   each neighbour's gives it the same full gap two sections meet across,
+   while the band itself stays edge to edge */
+.hb-intro{position:relative; z-index:3; padding:var(--hb-sec-y) 0}
+.hb-intro-wrap{width:100%}
 .hb-intro-card{
-  position:relative; overflow:hidden; border-radius:32px; text-align:center;
-  padding:clamp(56px,11vh,140px) clamp(26px,5vw,80px);
-  background:linear-gradient(140deg, rgba(255,255,255,.78), rgba(255,255,255,.34));
-  -webkit-backdrop-filter:blur(24px) saturate(1.35); backdrop-filter:blur(24px) saturate(1.35);
-  border:1px solid rgba(255,255,255,.95);
-  box-shadow:0 60px 120px -50px rgba(20,60,78,.55), inset 0 1px 0 rgba(255,255,255,1);
-  transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));
-  transition:transform .6s var(--ease), box-shadow .6s var(--ease);
+  position:relative; overflow:hidden; text-align:center;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  min-height:clamp(260px,42vh,460px);
+  padding:clamp(64px,12vh,128px) clamp(20px,7vw,96px);
+  background:linear-gradient(100deg, var(--sun-light) 0%, var(--earth-light) 50%, var(--sky-light) 100%);
 }
 .hb-intro-card::before{
   content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
-  background:radial-gradient(520px circle at var(--mx,50%) var(--my,10%),
+  background:radial-gradient(620px circle at var(--mx,50%) var(--my,10%),
     rgba(255,255,255,.95), rgba(255,255,255,0) 62%);
   opacity:.85;
 }
@@ -1226,11 +1555,11 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
   animation:hbSheen 8s ease-in-out infinite;
 }
 @keyframes hbSheen{0%,100%{transform:translateX(-30%) rotate(20deg)}50%{transform:translateX(400%) rotate(20deg)}}
-.hb-orb{position:absolute; border-radius:50%; filter:blur(46px); pointer-events:none; z-index:0; opacity:.7}
+.hb-orb{position:absolute; border-radius:50%; filter:blur(60px); pointer-events:none; z-index:0; opacity:.8}
 .hb-intro h2{
   position:relative; z-index:1; margin:0 auto; max-width:16ch; text-align:center;
   font-family:var(--serif); font-weight:600;
-  font-size:clamp(34px,6.6vw,104px); line-height:1.0; letter-spacing:-.015em; color:var(--hb-ink);
+  font-size:clamp(40px,7.6vw,128px); line-height:1.0; letter-spacing:-.015em; color:var(--hb-ink);
 }
 .hb-intro h2 span{display:inline-block; opacity:0; transform:translateY(42px) rotate(3deg);
   transition:opacity 1s var(--ease), transform 1s var(--ease)}
@@ -1250,9 +1579,9 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
   transition:transform .55s var(--ease), box-shadow .55s var(--ease);
 }
 .hb-el:hover{box-shadow:0 40px 76px -28px rgba(32,58,78,.55)}
-.hb-el--sun{background:linear-gradient(165deg,#fffaef,#ffe9be)}
-.hb-el--sky{background:linear-gradient(165deg,#f6fbfe,#cbe5f6)}
-.hb-el--earth{background:linear-gradient(165deg,#f8fbf2,#d5eab9)}
+.hb-el--sun{background:linear-gradient(165deg,var(--sun-mist),var(--sun-light))}
+.hb-el--sky{background:linear-gradient(165deg,var(--sky-mist),var(--sky-light))}
+.hb-el--earth{background:linear-gradient(165deg,var(--earth-mist),var(--earth-light))}
 .hb-el h3{margin:0 0 14px; font-family:var(--serif);
   font-size:clamp(30px,3.4vw,46px); font-weight:600; letter-spacing:.01em}
 .hb-el p{margin:0; font-size:15.5px; line-height:1.7; color:var(--hb-ink); opacity:.8}
@@ -1308,42 +1637,62 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
   box-shadow:0 0 0 4px rgba(34,48,42,.08);
   box-shadow:0 0 0 4px color-mix(in srgb, var(--halo, currentColor) 22%, transparent);
 }
-.hb-walk-grid{display:grid; grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);
-  gap:clamp(30px,5vw,80px); align-items:center; margin-top:clamp(34px,5vh,58px)}
-.hb-numbers{list-style:none; margin:0; padding:0}
-.hb-numbers li{border-top:1px solid var(--hb-line)}
-.hb-numbers li:first-child{border-top:none}
-.hb-numbers button{display:grid; grid-template-columns:auto 1fr; gap:20px; align-items:start;
-  width:100%; text-align:left; padding:24px 6px; transition:padding-left .4s var(--ease)}
-.hb-numbers button:hover{padding-left:12px}
-.hb-numbers .n{display:flex; align-items:center; justify-content:center;
-  width:42px; height:42px; border-radius:50%; font-size:15px; font-weight:600;
-  background:rgba(255,255,255,.72); color:var(--hb-soft); border:1px solid rgba(255,255,255,.95);
-  transition:background .4s var(--ease), color .4s var(--ease), transform .4s var(--ease), box-shadow .4s var(--ease)}
-.hb-numbers h4{margin:0 0 9px; font-family:var(--serif); font-size:clamp(21px,2.3vw,29px);
-  font-weight:600; transition:color .35s var(--ease)}
-.hb-numbers p{margin:0; font-size:clamp(15px,1.15vw,16.5px); line-height:1.75; color:var(--hb-soft);
-  max-height:0; overflow:hidden; opacity:0;
-  transition:max-height .55s var(--ease), opacity .45s var(--ease), margin-top .5s var(--ease)}
-.hb-numbers [aria-selected="true"] .n{background:var(--hb-ink); color:#fff; transform:scale(1.1);
-  box-shadow:0 12px 24px -10px rgba(34,48,42,.7)}
-.hb-numbers [aria-selected="true"] p{max-height:260px; opacity:1; margin-top:5px}
-.hb-walk-stage{position:relative; display:flex; justify-content:center; align-items:center}
-/* the glow behind each group's phone pulses in that chapter's colour */
-.hb-walk-stage .halo{
-  position:absolute; width:132%; aspect-ratio:1; border-radius:50%; pointer-events:none;
+/* --- the walkthrough itself is a linear, non-looping phone carousel:
+   active screen centred and full-size, its neighbours peeking from behind
+   it, tinted from the walk's own --halo (sky/sun/earth) --- */
+.hb-carousel{margin-top:clamp(38px,5.5vh,60px)}
+.hb-car-stage{position:relative; width:100%; max-width:640px; margin:0 auto;
+  padding:0 clamp(44px,6vw,64px)}
+.hb-car-track{position:relative; width:100%; max-width:270px; margin:0 auto; aspect-ratio:var(--ios)}
+.hb-car-glow{position:absolute; inset:-12%; z-index:0; pointer-events:none; border-radius:50%;
   background:radial-gradient(circle, var(--halo, rgba(255,255,255,.9)), rgba(255,255,255,0) 64%);
-  filter:blur(26px); animation:hbPulse 3.6s ease-in-out infinite;
-}
+  filter:blur(30px); opacity:.55; animation:hbPulse 3.6s ease-in-out infinite}
 @keyframes hbPulse{
-  0%,100%{opacity:.52; transform:scale(.9)}
-  50%    {opacity:1;   transform:scale(1.08)}
+  0%,100%{opacity:.4; transform:scale(.9)}
+  50%    {opacity:.7; transform:scale(1.08)}
 }
-.hb-walk-stage .hb-phone{box-shadow:
+.hb-car-slot{position:absolute; inset:0; z-index:1; cursor:default;
+  transition:transform .6s var(--ease), opacity .55s var(--ease)}
+.hb-car-slot .hb-phone{width:100%; height:100%; margin:0}
+.hb-car-slot:focus-visible{outline:2px solid var(--halo, var(--amber-soft)); outline-offset:4px; border-radius:11%/5%}
+.hb-car-slot.is-active{transform:translateX(0) scale(1); opacity:1; z-index:5; pointer-events:none}
+.hb-car-slot.is-active .hb-phone{box-shadow:
   0 34px 64px -20px rgba(32,58,78,.4),
-  0 0 44px -6px var(--halo-cast, transparent),
+  0 0 46px -6px var(--halo-cast, transparent),
   inset 0 1px 0 #fff}
-.hb-walk-stage .hb-float{position:relative; width:clamp(190px,22vw,266px)}
+.hb-car-slot.is-prev, .hb-car-slot.is-next{pointer-events:auto; cursor:pointer}
+/* a wrapped preview at either end of the sequence — shown only to keep the
+   three-phone composition balanced, never an actual navigation target */
+.hb-car-slot.is-decorative{pointer-events:none; cursor:default}
+.hb-car-slot.is-prev{transform:translateX(-58%) scale(.76); opacity:.5; z-index:3}
+.hb-car-slot.is-next{transform:translateX(58%) scale(.76); opacity:.5; z-index:3}
+.hb-car-slot.is-far-left{transform:translateX(-100%) scale(.6); opacity:0; z-index:1}
+.hb-car-slot.is-far-right{transform:translateX(100%) scale(.6); opacity:0; z-index:1}
+
+.hb-car-nav{position:absolute; top:50%; transform:translateY(-50%); z-index:6;
+  width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.75); border:1px solid color-mix(in srgb, var(--halo, #000) 22%, transparent);
+  color:var(--hb-ink); transition:background .3s var(--ease), opacity .3s var(--ease)}
+.hb-car-nav:hover{background:#fff}
+.hb-car-nav:focus-visible{outline:2px solid var(--halo, var(--amber-soft)); outline-offset:2px}
+.hb-car-nav.prev{left:0} .hb-car-nav.next{right:0}
+.hb-car-nav i{display:block; width:7px; height:7px; border-style:solid; border-color:currentColor; border-width:0 2px 2px 0}
+.hb-car-nav.next i{transform:rotate(-45deg); margin-left:-2px}
+.hb-car-nav.prev i{transform:rotate(135deg); margin-right:-2px}
+.hb-car-nav:disabled{opacity:.22; pointer-events:none}
+
+.hb-car-caption{text-align:center; max-width:520px; margin:clamp(26px,3.6vh,40px) auto 0}
+.hb-car-n{margin:0 0 8px; font-size:11px; letter-spacing:.26em; text-transform:uppercase; color:var(--hb-soft)}
+.hb-car-title{margin:0 0 12px; font-family:var(--serif); font-weight:600;
+  font-size:clamp(21px,2.2vw,28px); color:var(--hb-ink)}
+.hb-car-desc{margin:0; font-size:clamp(14px,1.05vw,15.5px); line-height:1.75; color:var(--hb-soft)}
+
+.hb-car-dots{display:flex; justify-content:center; align-items:center; gap:8px;
+  margin-top:clamp(20px,3vh,28px)}
+.hb-car-dots button{width:7px; height:7px; padding:0; border-radius:4px;
+  background:rgba(34,48,42,.18); transition:background .3s var(--ease), width .3s var(--ease)}
+.hb-car-dots button:focus-visible{outline:2px solid var(--halo, var(--amber-soft)); outline-offset:3px}
+.hb-car-dots button[aria-current="true"]{width:20px; background:var(--halo, var(--hb-ink))}
 
 /* --- knowledge: centred screens, tap to reveal --- */
 .hb-screens{display:flex; flex-wrap:wrap; justify-content:center;
@@ -1354,9 +1703,9 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .hb-pick .tapme{display:block; margin-top:20px; text-align:center;
   font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--hb-soft);
   transition:color .35s var(--ease)}
-.hb-pick:hover .tapme, .hb-pick[aria-expanded="true"] .tapme{color:var(--leaf)}
+.hb-pick:hover .tapme, .hb-pick[aria-expanded="true"] .tapme{color:var(--earth-ink)}
 .hb-pick[aria-expanded="true"] .hb-phone{
-  box-shadow:0 0 0 3px var(--leaf-soft), 0 50px 88px -22px rgba(32,58,78,.5)}
+  box-shadow:0 0 0 3px var(--earth), 0 50px 88px -22px rgba(32,58,78,.5)}
 .hb-pop{
   position:relative; margin:clamp(30px,4.5vh,52px) auto 0; max-width:660px; text-align:center;
   border-radius:22px; padding:clamp(28px,3.6vw,46px);
@@ -1370,39 +1719,6 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .hb-pop.on{opacity:1; transform:none; pointer-events:auto}
 .hb-pop h3{margin:0 0 14px; font-family:var(--serif); font-size:clamp(24px,2.8vw,36px); font-weight:600}
 .hb-pop p{margin:0 auto; max-width:56ch; font-size:15.5px; line-height:1.8; color:var(--hb-soft)}
-
-/* --- reflection --- */
-.hb-glass{
-  position:relative; overflow:hidden; border-radius:26px;
-  margin-top:clamp(40px,6vh,68px); padding:clamp(28px,4vw,60px);
-  background:rgba(255,255,255,.52);
-  -webkit-backdrop-filter:blur(20px) saturate(1.25); backdrop-filter:blur(20px) saturate(1.25);
-  border:1px solid rgba(255,255,255,.92);
-  box-shadow:0 40px 90px -40px rgba(32,58,78,.55), inset 0 1px 0 rgba(255,255,255,.95);
-}
-.hb-glass::before{content:""; position:absolute; inset:0; pointer-events:none; z-index:0;
-  background:radial-gradient(460px circle at var(--mx,50%) var(--my,20%),
-    rgba(255,255,255,.9), rgba(255,255,255,0) 62%); opacity:.75}
-.hb-glass::after{content:""; position:absolute; top:-60%; left:-30%; width:36%; height:220%;
-  pointer-events:none; z-index:0; transform:rotate(18deg);
-  background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.55), rgba(255,255,255,0));
-  animation:hbSheen 9s ease-in-out infinite}
-.hb-faq{position:relative; z-index:1}
-.hb-q{border-bottom:1px solid rgba(34,48,42,.16)}
-.hb-q:last-child{border-bottom:none}
-.hb-q > button{display:flex; align-items:center; gap:clamp(16px,2.4vw,32px); width:100%;
-  text-align:left; padding:clamp(22px,2.8vw,32px) 2px; transition:color .3s var(--ease)}
-.hb-q > button:hover{color:var(--leaf)}
-.hb-q .n{font-size:11px; letter-spacing:.2em; color:var(--hb-soft); flex:0 0 auto}
-.hb-q .q{flex:1; font-family:var(--serif); font-weight:600;
-  font-size:clamp(20px,2.6vw,34px); line-height:1.24}
-.hb-q .pm{position:relative; flex:0 0 auto; width:18px; height:18px}
-.hb-q .pm::before, .hb-q .pm::after{content:""; position:absolute; left:0; top:50%;
-  width:18px; height:1.6px; background:currentColor; transition:transform .4s var(--ease)}
-.hb-q .pm::after{transform:rotate(90deg)}
-.hb-q > button[aria-expanded="true"] .pm::after{transform:rotate(0)}
-.hb-a{overflow:hidden; max-height:0; transition:max-height .5s var(--ease)}
-.hb-a p{margin:0 0 30px; max-width:70ch; font-size:15.5px; line-height:1.82; color:var(--hb-soft)}
 
 .hb-foot{position:relative; z-index:3; text-align:center;
   padding:clamp(60px,10vh,120px) clamp(20px,7vw,96px) clamp(90px,14vh,150px)}
@@ -1427,17 +1743,31 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 }
 /* the phrase runs through the project's three colours. A flat fallback comes
    first, so browsers without background-clip still get a readable line. */
-.hb-statement em{font-style:italic; color:#4f92bf}
+.hb-statement em{font-style:italic; color:var(--sky-glow)}
 @supports ((-webkit-background-clip:text) or (background-clip:text)){
-  .hb-statement em{
-    display:inline-block;
-    background-image:linear-gradient(100deg, #b87e18 0%, #4f92bf 50%, #4f8a3a 100%);
+  /* One gradient reads across the phrase in order — sun at "So", leaf in the
+     middle, sky by "forgetting?" — split over its two lines, each line
+     carrying its own part so the colours meet exactly at the break (the
+     first line is ~64.5% of the phrase's length). Each line also gets room
+     on both sides: the italic "f" and "?" lean past their text box, and
+     text clipped to a background is only painted inside that box. The
+     negative margin gives the room back, so nothing moves. */
+  .hb-statement em > span{
+    display:inline;
+    padding:0 .2em .18em; margin:0 -.2em;
     -webkit-background-clip:text; background-clip:text;
     color:transparent; -webkit-text-fill-color:transparent;
-    /* the clip box is only as tall as the line, so descenders on "y" and "g"
-       were being cut. the padding gives them room; the margin takes the
-       space back so the heading's rhythm is unchanged. */
-    padding-bottom:.18em; margin-bottom:-.12em;
+  }
+  .hb-statement em > span:first-child{
+    background-image:linear-gradient(90deg,
+      var(--sun-glow) 0%, var(--sun-glow) 46.5%,
+      var(--earth-glow) 69.7%, var(--earth-glow) 92.9%,
+      color-mix(in srgb, var(--earth-glow), var(--sky-glow) 30.3%) 100%);
+  }
+  .hb-statement em > span:last-child{
+    background-image:linear-gradient(90deg,
+      color-mix(in srgb, var(--earth-glow), var(--sky-glow) 30.3%) 0%,
+      var(--sky-glow) 29.6%, var(--sky-glow) 100%);
   }
 }
 
@@ -1446,11 +1776,7 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
   list-style:none; margin:clamp(40px,6vh,74px) 0 0; padding:0;
   display:grid; grid-template-columns:repeat(4,1fr); gap:var(--cyc-gap);
 }
-.hb-cycle li{
-  position:relative; padding:clamp(22px,2.6vw,32px); border-radius:16px;
-  background:rgba(255,255,255,.74); border:1px solid rgba(255,255,255,.92);
-  box-shadow:0 16px 38px -26px rgba(32,58,78,.45);
-}
+.hb-cycle li{position:relative; padding:clamp(22px,2.6vw,32px)}
 .hb-cycle li:not(:last-child)::after{
   content:""; position:absolute; top:50%; z-index:2;
   right:calc(var(--cyc-gap) / -2 - 5px);
@@ -1486,10 +1812,15 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
   display:grid; grid-template-columns:repeat(auto-fit,minmax(258px,1fr));
   gap:clamp(16px,2.2vw,28px); margin-top:clamp(6px,1vh,12px);
 }
-.hb-persona{
-  padding:clamp(24px,3vw,34px); border-radius:18px;
+/* the interview cards' surface, shared with the problem-cycle cards above
+   so both read as one card style */
+.hb-persona, .hb-cycle li{
+  border-radius:18px;
   background:rgba(255,255,255,.76); border:1px solid rgba(255,255,255,.94);
   box-shadow:0 18px 44px -28px rgba(32,58,78,.45);
+}
+.hb-persona{
+  padding:clamp(24px,3vw,34px);
   transition:transform .45s var(--ease), box-shadow .45s var(--ease);
 }
 .hb-persona:hover{transform:translateY(-7px); box-shadow:0 30px 60px -28px rgba(32,58,78,.5)}
@@ -1497,7 +1828,7 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .hb-avatar{
   flex:0 0 auto; width:54px; height:54px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
-  font-family:var(--serif); font-weight:600; font-size:22px; color:#fff;
+  font-family:var(--serif); font-weight:600; font-size:22px; color:var(--hb-ink);
   box-shadow:0 8px 18px -8px rgba(34,48,42,.5);
 }
 .hb-persona h4{margin:0; font-family:var(--serif); font-size:clamp(20px,2vw,25px);
@@ -1586,7 +1917,7 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 }
 /* the one screen everything else hangs off */
 .hb-fnode.hub .hb-frame{box-shadow:0 0 0 2px var(--sky), 0 14px 30px -20px rgba(32,58,78,.5)}
-.hb-fnode.hub .step{background:var(--sky); color:#fff}
+.hb-fnode.hub .step{background:var(--sky); color:var(--hb-ink)}
 
 .hb-flow-alt{
   margin-top:clamp(30px,4vh,46px); padding-top:clamp(24px,3.4vh,38px);
@@ -1596,12 +1927,13 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
   margin:0 0 clamp(18px,2.6vh,26px); font-size:10.5px; letter-spacing:.2em;
   text-transform:uppercase; color:var(--hb-soft);
 }
-.hb-flow-alt .from b{color:var(--sky-4, #3b7fa6); font-weight:600}
+.hb-flow-alt .from b{color:var(--sky-ink); font-weight:600}
 .hb-flow-alt ul{list-style:none; margin:0; padding:0; display:flex;
   gap:clamp(12px,2vw,30px); flex-wrap:wrap}
 .hb-flow-alt li{flex:0 1 clamp(98px,11vw,138px); text-align:center}
 .hb-flow-alt h4{margin:12px 0 0; font-family:var(--serif); font-weight:600;
   font-size:clamp(13px,1.3vw,16px); color:var(--hb-ink)}
+.hb-flow-alt p{margin:5px 0 0; font-size:11px; line-height:1.5; color:var(--hb-soft)}
 
 /* ============================================================
    ITERATIONS
@@ -1612,32 +1944,161 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
   background:rgba(255,255,255,.7); border:1px solid rgba(255,255,255,.92);
   box-shadow:0 20px 46px -30px rgba(32,58,78,.45);
 }
-.hb-iter > h4{margin:0 0 clamp(20px,2.6vh,28px); font-family:var(--serif);
-  font-weight:600; font-size:clamp(20px,2.3vw,29px)}
-.hb-iter-row{display:flex; align-items:center; justify-content:center;
-  gap:clamp(16px,3vw,44px); flex-wrap:wrap}
-.hb-iter-row figure{margin:0; text-align:center; flex:0 1 clamp(130px,15vw,186px)}
-.hb-iter-row figcaption{margin-top:12px; font-size:10px; letter-spacing:.2em;
+.hb-iter-label{margin:0 0 10px; font-size:10.5px; letter-spacing:.28em;
   text-transform:uppercase; color:var(--hb-soft)}
+.hb-iter > h4{margin:0 0 clamp(30px,4vh,40px); font-family:var(--serif);
+  font-weight:600; font-size:clamp(20px,2.3vw,29px)}
+/* the phones are the centerpiece: generous room around the row, but each
+   phone sits close to its own caption so the two read as one unit */
+.hb-iter-row{display:flex; align-items:center; justify-content:center;
+  gap:clamp(20px,3.6vw,52px); flex-wrap:wrap}
+.hb-iter-fig{margin:0; text-align:center; flex:0 1 clamp(170px,20vw,252px);
+  transition:opacity .4s var(--ease)}
+.hb-iter-fig figcaption{margin-top:9px; font-size:10px; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--hb-soft); opacity:.7;
+  transition:opacity .4s var(--ease), color .4s var(--ease)}
 .hb-frame{
   position:relative; width:100%; aspect-ratio:var(--ios); border-radius:11% / 5.06%; overflow:hidden;
-  background:linear-gradient(to bottom, var(--sky-pale), var(--sun-pale) 54%, var(--leaf-pale));
+  background:linear-gradient(to bottom, var(--sky-pale), var(--sun-pale) 54%, var(--earth-pale));
   border:1px solid rgba(255,255,255,.9);
   box-shadow:0 14px 30px -20px rgba(32,58,78,.5);
   display:flex; align-items:center; justify-content:center;
+  transition:box-shadow .4s var(--ease);
 }
 .hb-frame img{width:100%; height:100%; object-fit:cover; display:block}
 .hb-frame em{font-style:normal; font-size:9px; letter-spacing:.18em; text-transform:uppercase;
   color:rgba(34,48,42,.38); padding:0 10px; text-align:center; line-height:1.6}
 .hb-frame.was{filter:saturate(.5) contrast(.95); opacity:.88}
 .hb-iter-arrow{position:relative; width:clamp(28px,4vw,56px); height:2px; flex:0 0 auto;
-  background:linear-gradient(90deg, rgba(34,48,42,.16), rgba(34,48,42,.4))}
+  background:linear-gradient(90deg, rgba(34,48,42,.16), rgba(34,48,42,.4));
+  transition:transform .4s var(--ease)}
 .hb-iter-arrow::after{content:""; position:absolute; right:0; top:50%; width:9px; height:9px;
   border-top:2px solid rgba(34,48,42,.4); border-right:2px solid rgba(34,48,42,.4);
   transform:translateY(-50%) rotate(45deg)}
-.hb-iter-note{margin:clamp(20px,2.6vh,28px) 0 0; font-size:14.5px; line-height:1.75;
+/* --- subtle before/after emphasis on hover, pointer devices only --- */
+@media (hover:hover) and (pointer:fine){
+  .hb-iter-row:has(.hb-iter-fig:hover) .hb-iter-fig{opacity:.55}
+  .hb-iter-row:has(.hb-iter-fig:hover) .hb-iter-fig:hover{opacity:1}
+  .hb-iter-row:has(.hb-iter-fig:hover) .hb-iter-fig:hover .hb-frame{
+    box-shadow:0 20px 42px -20px rgba(32,58,78,.62), 0 0 0 1px rgba(255,255,255,1)}
+  .hb-iter-row:has(.hb-iter-fig:hover) .hb-iter-fig:hover figcaption{opacity:1; color:var(--hb-ink)}
+  .hb-iter-row:has(.hb-iter-fig.now:hover) .hb-iter-arrow,
+  .hb-iter-row:hover .hb-iter-arrow{transform:translateX(3px)}
+}
+.hb-iter-note{margin:clamp(30px,4vh,42px) 0 0; font-size:14.5px; line-height:1.75;
   color:var(--hb-soft); max-width:70ch}
 .hb-iter-note b{color:var(--hb-ink); font-weight:600}
+/* three concise change points, side by side on desktop with thin dividers —
+   never another card */
+.hb-iter-compare{display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:16px 0; margin:clamp(22px,3vh,30px) 0 0; padding-top:16px;
+  border-top:1px solid rgba(34,48,42,.1)}
+.hb-iter-compare > div{padding-left:18px; border-left:1px solid rgba(34,48,42,.1)}
+.hb-iter-compare > div:first-child{padding-left:0; border-left:none}
+.hb-iter-compare dt{margin:0; font-size:9.5px; letter-spacing:.2em;
+  text-transform:uppercase; color:rgba(34,48,42,.42)}
+.hb-iter-compare dd{margin:5px 0 0; font-size:12.5px; line-height:1.5; color:var(--hb-soft)}
+
+/* ============================================================
+   DESIGN GROWTH — full-width reflection, then a horizontal
+   progression across the page (not a card, not an infographic)
+   ============================================================ */
+#hb-growth .hb-lead{max-width:none}
+
+.hb-progress{margin-top:clamp(56px,7vh,84px)}
+.hb-progress-row{display:flex; align-items:flex-start}
+.hb-pg-stage{flex:0 0 auto; width:clamp(108px,13vw,158px); text-align:center}
+.hb-pg-stage .zone{position:relative; display:block; height:30px; width:70px; margin:0 auto 16px}
+.hb-pg-stage .zone i{position:absolute; top:50%; left:50%; width:6px; height:6px; border-radius:50%;
+  margin:-3px 0 0 -3px; background:var(--earth-ink);
+  transition:transform .6s var(--ease), opacity .6s var(--ease)}
+/* stage one: loose, uneven, a little scattered */
+.hb-pg-stage.s1 .zone i:nth-child(1){transform:translate(-17px,-6px) rotate(-8deg); opacity:.55}
+.hb-pg-stage.s1 .zone i:nth-child(2){transform:translate(3px,7px) rotate(10deg); opacity:.8}
+.hb-pg-stage.s1 .zone i:nth-child(3){transform:translate(16px,-4px) rotate(-4deg); opacity:.65}
+/* stage two: settling into a loose, more deliberate row */
+.hb-pg-stage.s2 .zone i:nth-child(1){transform:translate(-15px,-2px); opacity:.78}
+.hb-pg-stage.s2 .zone i:nth-child(2){transform:translate(0,2px); opacity:.92}
+.hb-pg-stage.s2 .zone i:nth-child(3){transform:translate(15px,-1px); opacity:.85}
+/* stage three: resolved into a small, even system with its own baseline */
+.hb-pg-stage.s3 .zone i{opacity:1}
+.hb-pg-stage.s3 .zone i:nth-child(1){transform:translate(-14px,0)}
+.hb-pg-stage.s3 .zone i:nth-child(2){transform:translate(0,0)}
+.hb-pg-stage.s3 .zone i:nth-child(3){transform:translate(14px,0)}
+.hb-pg-stage.s3 .zone::after{content:""; position:absolute; left:6px; right:6px;
+  /* a baseline the dots rest above, never a line through them */
+  top:calc(50% + 8px);
+  height:1px; background:color-mix(in srgb, var(--earth-ink) 40%, transparent)}
+.hb-pg-stage .label{font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  font-weight:600; color:var(--hb-ink); line-height:1.4}
+/* the connector itself tells part of the story: a loose, uneven dashed rule
+   settling into a clean, solid one as the progression resolves */
+.hb-pg-link{flex:1 1 auto; padding-top:14px; min-width:36px}
+.hb-pg-link .line{display:block; height:1px;
+  background-image:repeating-linear-gradient(90deg,
+    color-mix(in srgb, var(--earth-ink) 42%, transparent) 0 3px, transparent 3px 8px);
+  opacity:.85}
+.hb-pg-link:last-of-type .line{
+  background-image:linear-gradient(90deg, color-mix(in srgb, var(--earth-ink) 50%, transparent), color-mix(in srgb, var(--earth-ink) 80%, transparent));
+  opacity:1}
+@media (max-width:900px){
+  .hb-progress-row{flex-direction:column; align-items:stretch}
+  .hb-pg-stage{width:auto; display:flex; align-items:center; gap:16px; text-align:left}
+  .hb-pg-stage .zone{margin:0; flex:0 0 auto}
+  .hb-pg-link{flex:0 0 auto; width:100%; padding:8px 0 8px 34px}
+  .hb-pg-link .line{width:1px; height:32px;
+    background-image:repeating-linear-gradient(180deg,
+      color-mix(in srgb, var(--earth-ink) 42%, transparent) 0 3px, transparent 3px 8px)}
+  .hb-pg-link:last-of-type .line{
+    background-image:linear-gradient(180deg, color-mix(in srgb, var(--earth-ink) 50%, transparent), color-mix(in srgb, var(--earth-ink) 80%, transparent))}
+}
+
+/* ============================================================
+   IF I WERE DESIGNING IT TODAY — four ideas, each with its own
+   small drawing in the Sun / Sky / Earth palette
+   ============================================================ */
+/* always two by two, so four ideas never leave one card alone on a row */
+.hb-ideas{display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:clamp(16px,2.2vw,28px); margin-top:clamp(40px,6vh,68px)}
+@media (max-width:760px){ .hb-ideas{grid-template-columns:1fr} }
+.hb-idea{
+  position:relative; display:flex; flex-direction:column;
+  padding:clamp(18px,2vw,24px) clamp(18px,2vw,24px) clamp(24px,2.8vw,34px);
+  border-radius:18px;
+  background:linear-gradient(165deg,
+    color-mix(in srgb, var(--tint) 13%, #fff) 0%, rgba(255,255,255,.76) 62%);
+  border:1px solid color-mix(in srgb, var(--tint) 24%, rgba(255,255,255,.9));
+  box-shadow:0 20px 44px -26px rgba(32,58,78,.42);
+  transition:transform .4s var(--ease), box-shadow .4s var(--ease);
+}
+.hb-idea:hover{transform:translateY(-3px); box-shadow:0 26px 52px -26px rgba(32,58,78,.5)}
+/* the drawing sits in its own soft panel at the top of the card */
+.hb-idea-art{
+  position:relative; height:clamp(128px,15vw,158px); border-radius:12px; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(160deg,
+    color-mix(in srgb, var(--tint) 42%, #fff), color-mix(in srgb, var(--tint) 16%, #fff));
+  border:1px solid rgba(255,255,255,.9);
+  margin-bottom:clamp(20px,2.4vw,28px);
+}
+.hb-idea-art svg{display:block; width:auto; height:82%; max-width:92%; overflow:visible}
+.hb-idea .num{display:block; font-size:10.5px; letter-spacing:.26em; color:var(--hb-soft); margin-bottom:10px}
+.hb-idea h3{margin:0 0 10px; font-family:var(--serif); font-weight:600;
+  font-size:clamp(22px,2.2vw,28px); line-height:1.2; color:var(--hb-ink)}
+.hb-idea p{margin:0; font-size:15px; line-height:1.75; color:var(--hb-soft); max-width:52ch}
+
+/* 01: a type specimen — the brand face, a serif and a sans side by side,
+   over a small scale of text sizes */
+.ia-type{display:flex; flex-direction:column; align-items:center; gap:12px}
+.ia-type .ia-row{display:flex; align-items:baseline; gap:clamp(12px,1.6vw,18px); color:var(--hb-ink)}
+.ia-type .a1{font-family:var(--brand); font-weight:700; font-size:clamp(34px,3.4vw,44px); line-height:1}
+.ia-type .a2{font-family:var(--serif); font-style:italic; font-weight:600; font-size:clamp(32px,3.2vw,42px); line-height:1; opacity:.85}
+.ia-type .a3{font-family:var(--sans); font-weight:500; font-size:clamp(24px,2.4vw,30px); line-height:1; opacity:.7}
+.ia-type .scale{display:flex; flex-direction:column; align-items:center; gap:5px; width:clamp(120px,13vw,150px)}
+.ia-type .scale i{display:block; height:5px; border-radius:3px; background:var(--sky-ink); opacity:.5}
+.ia-type .scale i:nth-child(1){width:100%; height:7px; opacity:.62}
+.ia-type .scale i:nth-child(2){width:72%}
+.ia-type .scale i:nth-child(3){width:48%; height:4px; opacity:.38}
 
 /* ============================================================
    PARALLAX DRIFT
@@ -1653,8 +2114,8 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .hb-drift .cloud::before{left:14%; width:46%; height:172%}
 .hb-drift .cloud::after{right:16%; width:34%; height:134%}
 .hb-drift .spark{border-radius:50%;
-  background:radial-gradient(closest-side circle, rgba(255,242,206,.95), rgba(255,214,120,0) 78%)}
-.hb-drift .leaf{border-radius:82% 12% 82% 12%; background:rgba(150,196,118,.4)}
+  background:radial-gradient(closest-side circle, rgba(var(--hb-sun-rgb),.95), rgba(var(--hb-sun-rgb),0) 78%)}
+.hb-drift .leaf{border-radius:82% 12% 82% 12%; background:rgba(var(--hb-earth-rgb),.7)}
 
 /* ============================================================
    RESPONSIVE
@@ -1667,8 +2128,13 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 
 /* laptops: keep the case-study copy readable beside the phone cluster */
 @media (max-width:1200px){
-  .hb-hero-copy{flex:0 1 min(42%, 440px)}
+  .hb-hero-copy{flex:0 1 min(46%, 520px)}
   .hb-cluster{flex:0 1 min(48%, 520px)}
+  /* the pods must shrink in step with the cluster's own reduced share of
+     the row, or their fixed vh/px caps let them stay large enough to spill
+     across the gap into the copy column */
+  .hb-cluster .pod{width:min(27%, 15.5vh, 152px)}
+  .hb-cluster .p2{width:min(33%, 18.5vh, 184px)}
   .cs-body{padding-inline:clamp(20px,5vw,48px)}
 }
 
@@ -1699,22 +2165,35 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
   .hb-hero-copy{flex:0 0 100%}
   .hb-mark{width:clamp(56px,9vw,80px); margin-bottom:clamp(20px,3.4vh,36px)}
   .hb-word2{font-size:clamp(34px, min(8vw, 7vh), 64px)}
-  .hb-desc{max-width:44ch; margin-top:clamp(14px,2.4vh,24px)}
+  .hb-desc{max-width:44ch; white-space:normal; margin-top:clamp(14px,2.4vh,24px)}
   .hb-meta{gap:16px clamp(20px,4vw,34px); margin-top:clamp(20px,3.4vh,36px)}
+  /* stacked: the phone group leaves absolute positioning behind and
+     re-enters normal document flow as a plain flex row underneath the
+     text. Its height is now derived entirely from its own children (no
+     manual height formula to fall out of sync), and because it is just
+     the next block after the copy — not layered over it — the two can
+     never overlap. The same front/centre-and-back-and-sides composition
+     is kept using bottom-alignment, size, and negative margins for the
+     overlap, instead of transform:translate(). */
   .hb-cluster{
-    flex:0 0 100%; align-self:auto;
-    /* stacked under the copy: one phone's height drives everything, and the
-       box adds the 20% step plus margin so nothing reaches an edge */
-    /* one phone's width drives the box: x2.05 for its height, x1.36 for the
-       step between the three and a margin top and bottom */
-    --pw:min(29vw, 21vh, 200px);
-    /* 2.174 for the device, 1.36 for the step between the three plus margin */
-    height:calc(var(--pw) * 2.957);
-    margin-top:clamp(28px,5vh,54px);
+    flex:0 0 100%; align-self:auto; display:flex;
+    align-items:flex-end; justify-content:center;
+    --pw:min(30vw, 19vh, 168px);
+    width:100%; margin-top:clamp(32px,5.5vh,58px); pointer-events:auto;
   }
-  .hb-cluster .pod{width:var(--pw)}
-  .hb-walk-grid{grid-template-columns:1fr; gap:34px}
-  .hb-walk-stage .hb-float{width:min(62vw, 240px)}
+  .hb-cluster .pod{
+    position:relative; left:auto; top:auto;
+    flex:0 0 auto; width:calc(var(--pw) * .78);
+  }
+  .hb-cluster .p1{
+    transform:rotate(-6deg); margin:0 calc(var(--pw) * -.18) 5% 0;
+  }
+  .hb-cluster .p2{width:calc(var(--pw) * 1.1); transform:rotate(0deg); margin:0}
+  .hb-cluster .p3{
+    transform:rotate(6deg); margin:0 0 5% calc(var(--pw) * -.18);
+  }
+  .hb-car-stage{max-width:520px; padding:0 clamp(38px,7vw,52px)}
+  .hb-car-track{max-width:228px}
   .hb-screens{gap:clamp(20px,5vw,48px)}
   .hb-pick{width:min(28vw, 170px)}
 
@@ -1736,7 +2215,7 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 
   .hb-personas{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
   .hb-statement{font-size:clamp(30px,6.2vw,56px)}
-  .hb-iter-row figure{flex:0 1 clamp(120px,22vw,170px)}
+  .hb-iter-row .hb-iter-fig{flex:0 1 clamp(150px,24vw,210px)}
   .hb-fnode{flex:0 0 clamp(96px,17vw,130px)}
   .hb-flow-alt li{flex:0 1 clamp(90px,17vw,124px)}
 }
@@ -1752,31 +2231,40 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
   .panel-sec  .v-scroll{--sh:clamp(62px, 13vh, 140px)}
   .brand{width:34px; height:34px}
   .brand-bubble{width:min(270px, calc(100vw - 28px)); padding:16px 17px 14px}
+  .rec-book{font-size:15px}
+  .rec-note{min-height:52px}
   .nav{padding:0 14px}
   .nav-links{gap:11px}
   .nav-link{font-size:9.5px; letter-spacing:.1em}
   .menu{width:min(260px, calc(100vw - 28px))}
 
   /* case study */
-  .hb-sec{padding:clamp(56px,10vh,96px) 20px}
-  .hb-cluster{--pw:min(28vw, 19vh, 180px)}
+  .cs-hydra{--hb-sec-y:clamp(56px,10vh,96px)}
+  .hb-sec{padding:var(--hb-sec-y) 20px}
+  .hb-cluster{--pw:min(28vw, 18vh, 152px)}
   .hb-tabs button{padding:11px 16px; font-size:11px; letter-spacing:.1em}
   .hb-row{padding:22px 20px}
-  .hb-intro{padding:clamp(48px,8vh,90px) 16px}
-  .hb-intro-card{padding:clamp(40px,8vh,72px) 20px; border-radius:22px}
-  .hb-glass{padding:24px 20px; border-radius:20px}
+  .hb-intro-card{min-height:clamp(220px,34vh,320px); padding:clamp(52px,9vh,84px) 20px}
   .hb-screens{gap:18px}
   .hb-pick{width:min(40vw, 168px)}
-  .hb-numbers button{gap:14px}
-  .hb-numbers .n{width:32px; height:32px; font-size:13px}
+  .hb-car-stage{padding:0 clamp(34px,9vw,46px)}
+  .hb-car-track{max-width:190px}
+  .hb-car-slot.is-prev{transform:translateX(-52%) scale(.74)}
+  .hb-car-slot.is-next{transform:translateX(52%) scale(.74)}
+  .hb-car-nav{width:32px; height:32px}
   .cs-body{padding-inline:20px}
   /* before and after stack, so neither frame is squeezed */
   .hb-iter-row{flex-direction:column; gap:14px}
-  .hb-iter-row figure{flex:0 1 auto; width:min(58vw, 190px)}
+  .hb-iter-row .hb-iter-fig{flex:0 1 auto; width:min(62vw, 230px)}
   .hb-iter-arrow{width:2px; height:26px;
     background:linear-gradient(180deg, rgba(34,48,42,.16), rgba(34,48,42,.4))}
   .hb-iter-arrow::after{right:auto; left:50%; top:auto; bottom:0;
     transform:translateX(-50%) rotate(135deg)}
+  /* three change points stack too, with a top divider instead of a side one */
+  .hb-iter-compare{grid-template-columns:1fr; gap:14px}
+  .hb-iter-compare > div{padding-left:0; border-left:none;
+    padding-top:14px; border-top:1px solid rgba(34,48,42,.1)}
+  .hb-iter-compare > div:first-child{padding-top:0; border-top:none}
 }
 
 /* very narrow */
@@ -1787,13 +2275,13 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
   .hb-avatar{width:46px; height:46px; font-size:19px}
   .hb-cycle li{padding:20px}
   .hb-iter{padding:20px}
-  .hb-iter-row figure{width:min(70vw, 180px)}
-  .hb-cluster{--pw:min(27vw, 18vh, 160px)}
+  .hb-iter-row .hb-iter-fig{width:min(74vw, 210px)}
+  .hb-cluster{--pw:min(26vw, 17vh, 136px)}
   .hb-trio, .hb-cards{grid-template-columns:1fr}
   .hb-meta{gap:13px 18px}
   .hb-meta dt{letter-spacing:.18em}
   .hb-desc{max-width:100%}
-  .hb-hero{padding-bottom:clamp(74px,12vh,120px)}
+  .hb-hero{padding-bottom:clamp(120px,20vh,170px)}
   .hb-screens{flex-direction:column; align-items:center}
   .hb-pick{width:min(58vw, 200px)}
 }
@@ -1803,8 +2291,11 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
    than overflow as vertical room disappears */
 /* wide but short: the row layout stays, so the phones take their cue from
    the height that is actually left between the padding */
-@media (max-height:640px){
-  .hb-cluster .pod{width:min(32%, 17vh, 210px)}
+/* short-but-wide windows only — below 900px width the cluster is already
+   in normal flow and sized from --pw instead */
+@media (max-height:640px) and (min-width:901px){
+  .hb-cluster .pod{width:min(29%, 15.5vh, 190px)}
+  .hb-cluster .p2{width:min(35%, 18.5vh, 228px)}
 }
 @media (max-height:720px){
   .plaque{font-size:11px; padding:5px 6px}
@@ -1825,6 +2316,8 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
   .plaque{font-size:10px; letter-spacing:.14em; padding:4px 5px; bottom:7px}
   .nook-frame{padding:9px 11px 28px}
   .nook-arch{inset:9px 11px 28px; border-radius:56px 56px 4px 4px}
+  .nook[data-project="hydrabloom"] .nook-frame,
+  .nook[data-project="lantern"] .nook-frame{border-radius:67px 67px 3px 3px / 65px 65px 3px 3px}
   .nook-caption{bottom:28px; padding:20px 8px 8px}
   .rail{bottom:40px}
   .hint{bottom:14px}
@@ -1843,6 +2336,8 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
   .nook{width:132px}
   .nook-frame{padding:7px 8px 22px}
   .nook-arch{inset:7px 8px 22px; border-radius:40px 40px 3px 3px}
+  .nook[data-project="hydrabloom"] .nook-frame,
+  .nook[data-project="lantern"] .nook-frame{border-radius:48px 48px 3px 3px / 47px 47px 3px 3px}
   .nook-caption{display:none}
   .plaque{font-size:9px; bottom:5px; padding:3px 4px}
   .display{font-size:clamp(20px,2.2vw,30px)}
@@ -1862,15 +2357,38 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 
 <header class="nav">
   <div class="brand-wrap">
-    <button class="brand" id="avatar" aria-label="Janet Marlowe — say hello"
+    <button class="brand" id="avatar" aria-label="Janet Sanchez — say hello"
             aria-expanded="false" aria-controls="brandBubble">
       <span class="avatar-ph" aria-hidden="true"></span>
     </button>
-    <div class="brand-bubble" id="brandBubble" role="dialog" aria-label="About Janet" hidden>
-      <span class="sig">Currently on my nightstand</span>
-      <p><em>Piranesi</em> by Susanna Clarke. It's about someone who lives inside
-         a house of endless halls and catalogues every room with total devotion.
-         I think about it whenever a project starts feeling too big to map.</p>
+    <div class="brand-bubble" id="brandBubble" role="dialog" aria-labelledby="recTitle" hidden>
+      <form class="rec" id="recForm" novalidate>
+        <span class="sig" id="recTitle">What should I read next?</span>
+        <p>My shelf could always use another book. Leave me a recommendation.</p>
+        <label class="rec-field">
+          <span class="rec-label">Book title</span>
+          <input class="rec-input rec-book" id="recBook" name="book" type="text"
+                 placeholder="What should I read?" autocomplete="off" maxlength="140" required>
+        </label>
+        <label class="rec-field">
+          <span class="rec-label">A little note <i>(optional)</i></span>
+          <textarea class="rec-input rec-note" id="recNote" name="note" rows="2"
+                    placeholder="Tell me what you loved about it..." maxlength="600"></textarea>
+        </label>
+        <button class="rec-send" type="submit">Add to my shelf <span aria-hidden="true">→</span></button>
+      </form>
+      <div class="rec-done" id="recDone" hidden>
+        <div class="rec-shelf" aria-hidden="true">
+          <i class="rb rb1"></i><i class="rb rb2"></i><i class="rb rb3"></i>
+          <i class="rb rb-new"></i>
+          <i class="rb rb4"></i>
+          <b class="rec-board"></b>
+        </div>
+        <p class="rec-thanks" role="status" aria-live="polite">
+          <span class="sig">Added to the shelf <span aria-hidden="true">✦</span></span>
+          Thanks for the recommendation!
+        </p>
+      </div>
     </div>
   </div>
   <nav class="nav-links" aria-label="Sections of the bookshelf">
@@ -1881,7 +2399,7 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
       <div class="menu" id="workMenu" role="menu" aria-label="Jump to a project" hidden></div>
     </div>
     <button class="nav-link" data-go="about">About</button>
-    <button class="nav-link" data-go="resume">Résumé</button>
+    <a class="nav-link" href="https://drive.google.com/file/d/1o6BoUyClgMbnh1l6JJH_4JBRrA9_7XHk/view?usp=sharing" target="_blank" rel="noopener noreferrer">Résumé</a>
     <button class="nav-link" data-go="contact">Contact</button>
   </nav>
 </header>
@@ -1922,10 +2440,15 @@ const REDUCE = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
    Put your picture here — a file path ("me.jpg"), a full URL, or a data URI.
    Leave it empty and the avatar shows a placeholder silhouette instead.
    A square image works best; it is cropped to a circle.                     */
-const AVATAR_SRC = "";
+const AVATAR_SRC = "images/hydrabloom/grad.jpg";
 if (AVATAR_SRC){
   const av = document.getElementById("avatar");
-  av.style.backgroundImage = "url('" + AVATAR_SRC + "')";
+  const img = document.createElement("img");
+  img.className = "avatar-img";
+  img.src = AVATAR_SRC;
+  img.alt = "";
+  img.decoding = "async";
+  av.appendChild(img);
   av.classList.add("has-photo");
 }
 
@@ -1940,16 +2463,36 @@ if (AVATAR_SRC){
      pos   optional framing, same syntax as CSS object-position, e.g.
            "center", "50% 30%", "top". Handy when a cover crop cuts off
            the part you care about.
+     crop  optional [x0, y0, x1, y1, width, height] in the source image's own
+           pixels. Only that rectangle is ever shown: it is scaled to cover
+           the opening and centred, so anything outside it (a painted frame,
+           a background) can never appear, whatever shape the opening takes.
 
    Anything left empty keeps the built-in CSS scene. If a file is missing or
    fails to load, the CSS scene comes back automatically, so a broken path
    never leaves an empty hole in the shelf.                                  */
 const ART = {
-  hydrabloom: {nook:"", hero:"", pos:"center"},
+  /* the PNG carries its own black ground and beige arch; the crop keeps to
+     the greenhouse interior, set far enough inside that the nook's rounder
+     or squarer corners at every breakpoint still land on the painting */
+  hydrabloom: {nook:"images/hydrabloom/hydrabloom%20arch.png", hero:"", pos:"center",
+               crop:[264, 140, 760, 1450, 1024, 1536]},
   lantern:    {nook:"", hero:"", pos:"center"}
 };
 
-function artMarkup(src, pos){
+function artMarkup(src, pos, crop){
+  if (crop){
+    /* the box has the crop's proportions and covers the opening; the image
+       is sized and offset inside it so the crop rectangle fills the box */
+    const cw = crop[2] - crop[0], ch = crop[3] - crop[1];
+    const pct = function(n){ return (n * 100).toFixed(4) + "%"; };
+    return '<div class="scene sc-art art-crop">'
+         + '<div class="art-box" style="--crop-ratio:' + (cw / ch).toFixed(5) + '">'
+         + '<img class="art-img" src="' + src + '" alt="" aria-hidden="true" style="'
+         +   'width:' + pct(crop[4] / cw) + ';height:' + pct(crop[5] / ch)
+         +   ';left:' + pct(-crop[0] / cw) + ';top:' + pct(-crop[1] / ch) + '">'
+         + '</div></div>';
+  }
   return '<div class="scene sc-art">'
        + '<img class="art-img" src="' + src + '" alt="" aria-hidden="true"'
        + (pos ? ' style="--art-pos:' + pos + '"' : '') + '>'
@@ -1960,7 +2503,7 @@ function artMarkup(src, pos){
 function sceneMarkup(id, which){
   const a = ART[id] || {};
   const src = which === "hero" ? (a.hero || a.nook) : a.nook;
-  return src ? artMarkup(src, a.pos) : SCENES[PROJECTS[id].scene]();
+  return src ? artMarkup(src, a.pos, a.crop) : SCENES[PROJECTS[id].scene]();
 }
 
 /* if the file is missing, quietly put the CSS scene back */
@@ -1980,7 +2523,7 @@ const PROJECTS = {
   hydrabloom: {
     name:"HydraBloom", sub:"Making hydration feel rewarding.",
     kicker:"Product design · Habit app", scene:"bloom",
-    meta:[["Role","Product Designer"],["Timeline","8 weeks"],["Platform","iOS"],["Year","2026"]],
+    meta:[["Role","UX/UI Designer"],["Timeline","8 weeks"],["Project type","Academic Project"],["Year","2026"]],
     sections:[
       ["Overview","HydraBloom turns a dull daily target into a garden that visibly responds to care. Drink water, something grows.","Placeholder copy. Replace with the real project framing."],
       ["Problem","Hydration reminders nag. Nagging gets muted, then deleted.","Placeholder copy on why streak-and-guilt mechanics fail for low-stakes habits."],
@@ -2286,10 +2829,10 @@ function nook(id, anchor){
 const PANELS = {
   home: {cls:"panel-hero", html:
     '<p class="eyebrow">Portfolio · 2026</p>' +
-    '<h1 class="display">Janet<br><em>Marlowe</em></h1>' +
+    '<h1 class="display">Janet<br><em>Sanchez</em></h1>' +
     '<div class="v-scroll-wrap"><div class="v-scroll" tabindex="0">' +
-      '<p class="lede">Product Designer creating thoughtful digital experiences. ' +
-      'Each project is a small world set between the books.</p>' +
+      '<p class="lede hero-line"><span>Every project has a story.</span> ' +
+      '<span>I design the experience around it.</span></p>' +
     '</div><button class="scroll-hint" type="button" aria-label="Show more text">' +
       'scroll<i aria-hidden="true"></i></button></div>' +
     '<button class="inline-cta" data-browse>Explore my work →</button>'},
@@ -2300,18 +2843,25 @@ const PANELS = {
       '<p class="lede">I\'m a Product Designer interested in creating thoughtful, ' +
       'human-centered digital experiences — the kind people can find their way ' +
       'through without being told how.</p>' +
-      '<p class="lede">Placeholder paragraph about background and approach. ' +
-      'Keep adding as much as you like; this box stays the same size and the ' +
-      'reader scrolls through it.</p>' +
+      '<p class="lede">My path into design started long before I knew what UX was. ' +
+      'From designing for student leadership and creating art to studying Cognitive ' +
+      'Science at UC San Diego, I\'ve always been drawn to understanding people and ' +
+      'turning ideas into something they can see, use, and connect with.</p>' +
+      '<p class="lede">I especially love bringing personality into digital ' +
+      'experiences and finding that balance between something that feels ' +
+      'beautiful and something that simply makes sense.</p>' +
+      '<p class="eyebrow" style="margin-top:22px">Beyond Design</p>' +
+      '<p class="lede">When I\'m not designing, you\'ll probably find me reading, ' +
+      'listening to music, or trying a new restaurant.</p>' +
     '</div><button class="scroll-hint arrow-only" type="button" aria-label="Show more text">' +
       '<i aria-hidden="true"></i></button></div>'},
   contact: {cls:"panel-sec", html:
     '<p class="eyebrow">Contact</p>' +
     '<h2 class="display">Let\'s create<br>something <em>thoughtful.</em></h2>' +
     '<div class="contact-links">' +
-      '<a href="mailto:hello@example.com">Email</a>' +
-      '<a href="https://www.linkedin.com" target="_blank" rel="noopener">LinkedIn</a>' +
-      '<a href="https://app.joinhandshake.com" target="_blank" rel="noopener">Handshake</a>' +
+      '<a href="mailto:janetsanchez.work@gmail.com">Email</a>' +
+      '<a href="https://www.linkedin.com/in/janet-sanchez-891721312" target="_blank" rel="noopener noreferrer">LinkedIn</a>' +
+      '<a href="https://ucsd.joinhandshake.com/profiles/janetsanchez" target="_blank" rel="noopener noreferrer">Handshake</a>' +
     '</div>'}
 };
 function slot(width, key){
@@ -2334,14 +2884,18 @@ RUNS.set(rowMain, 4, "midnight");
 RUNS.paperbacks(rowMain, 4);
 A(slot(Math.round(Math.min(1080, Math.max(300, window.innerWidth * .56))), "home"));
 runSeq(rowMain, SEQ_A);
-A(spacer(20));
+/* HydraBloom is tucked in tight, like a real book nook wedged between the
+   spines: a hair of air either side, and SEQ_B's own opening gap is skipped
+   here so it doesn't push the next set away */
+A(spacer(4));
 A(nook("hydrabloom", "hydrabloom"));
-A(spacer(20));
-runSeq(rowMain, SEQ_B);
+A(spacer(4));
+runSeq(rowMain, SEQ_B.slice(1));
 runSeq(rowMain, SEQ_E);
-A(spacer(20));
+/* Lantern is tucked in the same way */
+A(spacer(4));
 A(nook("lantern", "lantern"));
-A(spacer(20));
+A(spacer(4));
 runSeq(rowMain, SEQ_C);
 A(slot(Math.round(Math.min(940, Math.max(280, window.innerWidth * .49))), "about"));
 runSeq(rowMain, SEQ_D);
@@ -2518,7 +3072,6 @@ function buildPanels(){
     const inset = Math.min(130, Math.max(28, r.width * 0.10));
     const p = document.createElement("div");
     p.className = "panel " + spec.cls;
-    p.dataset.panel = s.dataset.slot;
     p.style.left = r2(left + inset) + "px";
     p.style.width = r2(Math.max(160, r.width - inset * 2)) + "px";
     p.innerHTML = '<div class="v-copy">' + spec.html + '</div>';
@@ -2526,31 +3079,6 @@ function buildPanels(){
     panelEls.push(p);
   });
   return blocked;
-}
-
-/* decorate() builds once, but the books reflow whenever the window changes —
-   a new height re-measures the leans, which shifts every position along the
-   shelf. So the panels are re-seated against their own opening on each layout,
-   otherwise they keep the pixel positions from the very first pass and drift
-   away from the gap they belong to. */
-function positionPanels(){
-  const caseR = caseEl.getBoundingClientRect();
-  Array.prototype.forEach.call(document.querySelectorAll("[data-slot]"), function(sl){
-    const p = caseEl.querySelector('.panel[data-panel="' + sl.dataset.slot + '"]');
-    if (!p) return;
-    const r = sl.getBoundingClientRect();
-    const inset = Math.min(130, Math.max(28, r.width * 0.10));
-    p.style.left = r2((r.left - caseR.left) + inset) + "px";
-    p.style.width = r2(Math.max(160, r.width - inset * 2)) + "px";
-  });
-}
-
-/* the dividers drift for the same reason, so they hold a fraction of the
-   shelf's length rather than a fixed pixel offset */
-function positionUprights(width){
-  Array.prototype.forEach.call(caseEl.querySelectorAll(".upright"), function(u){
-    if (u.dataset.fx) u.style.left = r2(parseFloat(u.dataset.fx) * width) + "px";
-  });
 }
 
 function addUprights(width, blocked){
@@ -2563,7 +3091,6 @@ function addUprights(width, blocked){
     if (hit) continue;
     const u = document.createElement("div");
     u.className = "upright";
-    u.dataset.fx = (x / Math.max(width, 1)).toFixed(6);
     u.style.left = r2(x) + "px";
     caseEl.appendChild(u);
   }
@@ -2601,8 +3128,6 @@ function layout(){
   W = measureMainWidth();
   caseEl.style.width = W + "px";
   decorate(W);
-  positionPanels();
-  positionUprights(W);
   centrePanelCopy();
   maxX = Math.max(0, W - vw);
   cacheAnchors();
@@ -2717,6 +3242,9 @@ stage.addEventListener("click", function(e){
 window.addEventListener("keydown", function(e){
   if (isOverlayOpen()){ if (e.key === "Escape") closeProject(); return; }
   if (e.key === "Escape" && bubbleOpen){ closeBubble(true); return; }
+  /* typing in the recommendation slip: arrows, Home/End and paging belong
+     to the text field, not to walking the shelf */
+  if (e.target.closest && e.target.closest("#brandBubble")) return;
   if (e.key === "Escape" && menuOpen){ closeMenu(true); return; }
   const tag = (document.activeElement && document.activeElement.tagName) || "";
   if (e.key === "ArrowRight"){ nudge(vw*.55); e.preventDefault(); }
@@ -2889,9 +3417,65 @@ function closeBubble(returnFocus){
   bubbleOpen = false;
   brandBubble.classList.remove("open");
   brandBtn.setAttribute("aria-expanded", "false");
-  setTimeout(function(){ if (!bubbleOpen) brandBubble.hidden = true; }, 300);
+  setTimeout(function(){
+    if (bubbleOpen) return;
+    brandBubble.hidden = true;
+    /* after a thank-you, the next visit finds a fresh slip */
+    if (!recDone.hidden) resetRec();
+  }, 300);
   if (returnFocus) brandBtn.focus();
 }
+
+/* ---- the recommendation slip ----------------------------------------------
+   Where recommendations go. Leave RECOMMEND_ENDPOINT empty and the slip
+   still plays its thank-you but sends nothing anywhere. Set it to a form
+   endpoint (Formspree, Getform, a serverless function...) that accepts a
+   JSON POST of {book, note} and each one is delivered there.              */
+const RECOMMEND_ENDPOINT = "";
+const recForm = document.getElementById("recForm");
+const recBook = document.getElementById("recBook");
+const recNote = document.getElementById("recNote");
+const recDone = document.getElementById("recDone");
+
+function sendRecommendation(rec){
+  if (!RECOMMEND_ENDPOINT) return Promise.resolve();
+  return fetch(RECOMMEND_ENDPOINT, {
+    method:"POST",
+    headers:{"Content-Type":"application/json", "Accept":"application/json"},
+    body:JSON.stringify(rec)
+  }).catch(function(){});
+}
+function resetRec(){
+  recForm.reset();
+  recForm.classList.remove("leaving");
+  recForm.hidden = false;
+  recDone.hidden = true;
+  recDone.classList.remove("play");
+}
+recBook.addEventListener("animationend", function(){ recBook.classList.remove("need"); });
+recBook.addEventListener("input", function(){ recBook.classList.remove("need"); });
+recForm.addEventListener("submit", function(e){
+  e.preventDefault();
+  const book = recBook.value.trim();
+  if (!book){
+    recBook.classList.remove("need"); void recBook.offsetWidth;
+    recBook.classList.add("need");
+    recBook.focus();
+    return;
+  }
+  sendRecommendation({book:book, note:recNote.value.trim()});
+  /* ~1s: the slip fades (.22s), the new spine slides onto the little shelf,
+     then the thank-you settles in underneath */
+  const swap = function(){
+    recForm.hidden = true;
+    recDone.hidden = false;
+    recDone.classList.add("play");
+    brandBubble.focus({preventScroll:true});
+  };
+  if (REDUCE){ swap(); return; }
+  recForm.classList.add("leaving");
+  setTimeout(swap, 220);
+});
 
 brandBtn.addEventListener("click", function(e){
   e.stopPropagation();
@@ -2900,6 +3484,7 @@ brandBtn.addEventListener("click", function(e){
   if (bubbleOpen) closeBubble(false); else openBubble();
 });
 brandBubble.addEventListener("click", function(e){ e.stopPropagation(); });
+brandBubble.tabIndex = -1;
 document.addEventListener("click", function(e){
   if (bubbleOpen && !e.target.closest(".brand-wrap")) closeBubble(false);
 });
@@ -2946,7 +3531,20 @@ const backBtn = document.getElementById("backBtn");
 backBtn.addEventListener("click", closeProject);
 
 let openBtn = null, openFrom = null;
-const isOverlayOpen = () => !overlay.hidden;
+/* true while the camera is travelling into a nook: the shelf stops taking
+   input, but the case study is not on screen yet */
+let dreaming = false;
+const isOverlayOpen = () => !overlay.hidden || dreaming;
+/* nooks that open by entering their own world rather than by expanding.
+   tone: what the screen passes through on the way — white for a light case
+   study, black for a dark one. back: whether leaving plays the entry in
+   reverse (into the tone, then back out through the arch). */
+const DREAM_CASES = {
+  hydrabloom: {tone:"light", back:true},
+  lantern:    {tone:"dark",  back:true}
+};
+/* the colour the veil reaches at the handoff */
+const DREAM_TONE = {light:"#fff", dark:"#000"};
 
 function caseHTML(id){
   if (CASE_BUILDERS[id]) return CASE_BUILDERS[id]();
@@ -2971,6 +3569,8 @@ function caseHTML(id){
 }
 
 function openProject(id, btn){
+  if (isOverlayOpen()) return;
+  if (DREAM_CASES[id]){ enterNook(id, btn); return; }
   const r = btn.getBoundingClientRect();
   openFrom = {l:r.left, t:r.top, w:r.width, h:r.height};
   openBtn = btn;
@@ -3010,8 +3610,236 @@ function openProject(id, btn){
   setTimeout(function(){ backBtn.focus({preventScroll:true}); }, REDUCE ? 0 : 520);
 }
 
+/* ---- entering the nook ------------------------------------------------------
+   click -> the scene travels out of the arch until it fills the screen ->
+   its wash rises -> the screen reaches the case's tone (white or black) ->
+   the case study is switched in underneath -> the tone lifts to reveal it.
+   The shelf never moves and the case study is never scaled.                */
+
+/* where the arch is right now (hover scale included), and the zoom that
+   takes it past every edge of the screen, rounded top included */
+function nookGeometry(btn){
+  const arch = btn.querySelector(".nook-arch") || btn;
+  const a = arch.getBoundingClientRect();
+  const k = arch.offsetWidth ? a.width / arch.offsetWidth : 1;
+  const rCss = parseFloat(getComputedStyle(arch).borderTopLeftRadius) || 0;
+  const r0 = Math.min(rCss, arch.offsetWidth / 2) * k;
+  const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+  const S = Math.max(vw / a.width, vh / Math.max(1, a.height - 2 * r0)) * 1.06;
+  return {arch, a, r0, vw, vh, S, W:a.width * S, H:a.height * S,
+          dx:(a.left + a.width / 2) - vw / 2, dy:(a.top + a.height / 2) - vh / 2};
+}
+
+/* the zoom as keyframes, from the arch (u=0) to full screen (u=1). It grows
+   geometrically about one fixed point on the nook, which reads as a camera
+   moving at an even pace: scale S^(u-1), and the offset that keeps that
+   point still, d * S/(S-1) * (1 - scale). Both are linear in scale, so the
+   browser's interpolation between steps stays on the same path. */
+function zoomSteps(g){
+  const steps = [];
+  for (let i = 0; i <= 12; i++){
+    const sc = Math.pow(g.S, i / 12 - 1);
+    const m = g.S / (g.S - 1) * (1 - sc);
+    steps.push({opacity:1, transform:"translate3d(" + g.dx * m + "px," + g.dy * m + "px,0) scale(" + sc + ")"});
+  }
+  return steps;
+}
+
+/* a copy of the nook's scene, laid out at its FINAL full-screen size (so it
+   is rasterised once, sharp) and shrunk by transform to sit on the arch.
+   A picture is rebuilt from ART; a CSS scene is cloned from the live nook
+   with its animations frozen at the same moment, so frame one matches. */
+function travelLayer(id, btn, g, atArch){
+  const travel = dreamLayer("nook-travel");
+  travel.style.cssText = "left:" + (g.vw - g.W) / 2 + "px;top:" + (g.vh - g.H) / 2 + "px;"
+    + "width:" + g.W + "px;height:" + g.H + "px;"
+    + "border-radius:" + g.r0 * g.S + "px " + g.r0 * g.S + "px 0 0;opacity:0;"
+    + "transform:" + (atArch ? "translate3d(" + g.dx + "px," + g.dy + "px,0) scale(" + (1 / g.S) + ")" : "none");
+  const art = ART[id] || {};
+  let freeze = function(){};
+  if (art.nook){
+    travel.innerHTML = artMarkup(art.nook, art.pos, art.crop);
+  } else {
+    const live = btn.querySelector(".nook-arch .scene");
+    const copy = live.cloneNode(true);
+    travel.appendChild(copy);
+    /* only the scene's own looping animations are paired up; a hover
+       transition running on the live nook has no twin in the copy */
+    const loops = function(el){
+      return el.getAnimations({subtree:true}).filter(function(an){ return an instanceof CSSAnimation; });
+    };
+    freeze = function(){
+      const from = loops(live);
+      loops(copy).forEach(function(an, i){
+        if (from[i]) an.currentTime = from[i].currentTime;
+        an.pause();
+      });
+    };
+  }
+  return {el:travel, freeze:freeze};
+}
+
+/* a full-screen layer for the transition; while up it swallows wheel and
+   touch scrolling, so nothing underneath moves */
+function dreamLayer(cls){
+  const el = document.createElement("div");
+  el.className = cls;
+  el.setAttribute("aria-hidden", "true");
+  const block = function(e){ e.preventDefault(); };
+  el.addEventListener("wheel", block, {passive:false});
+  el.addEventListener("touchmove", block, {passive:false});
+  return el;
+}
+
+/* ready when a copied picture is decoded, so its first frame is never blank */
+function travelReady(travel){
+  const img = travel.querySelector("img");
+  return (img && img.decode ? img.decode() : Promise.resolve()).catch(function(){});
+}
+
+const DREAM_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+const DREAM_TRAVEL = 850, DREAM_TONE_AT = 600, DREAM_TONE_IN = 420,
+      DREAM_HOLD = 130, DREAM_LIFT = 540;
+
+function enterNook(id, btn){
+  const cfg = DREAM_CASES[id];
+  const r = btn.getBoundingClientRect();
+  openFrom = {l:r.left, t:r.top, w:r.width, h:r.height};
+  openBtn = btn;
+  dreaming = true;
+  closeMenu(false);
+  closeBubble(false);
+
+  /* build the page now, still hidden, so its images load during the travel */
+  overlay.innerHTML = caseHTML(id);
+  wireArt(overlay, id);
+  overlay.classList.toggle("light", !!LIGHT_CASES[id]);
+  backBtn.classList.toggle("on-light", !!LIGHT_CASES[id]);
+
+  /* put the case study on screen, full size, behind whatever covers it */
+  const showCase = function(){
+    overlay.classList.add("dream-in", "shown");
+    overlay.hidden = false;
+    overlay.scrollTop = 0;
+    overlay.style.setProperty("--scroll", "0");
+    wireHydra(overlay);
+    const nav = document.querySelector(".nav");
+    nav.style.opacity = "0";
+    nav.style.pointerEvents = "none";
+    stage.setAttribute("aria-hidden","true");
+    backBtn.hidden = false;
+  };
+  const done = function(){
+    overlay.classList.remove("dream-in");
+    dreaming = false;
+    backBtn.focus({preventScroll:true});
+  };
+
+  if (REDUCE){
+    showCase();
+    overlay.animate([{opacity:0}, {opacity:1}], {duration:300, easing:"ease"})
+      .finished.catch(function(){}).then(done);
+    return;
+  }
+
+  const g = nookGeometry(btn);
+  const t = travelLayer(id, btn, g, true);
+  const travel = t.el;
+  const wash = dreamLayer("nook-wash" + (cfg.tone === "dark" ? " dark" : ""));
+  const veil = dreamLayer("nook-veil");
+  veil.style.background = DREAM_TONE[cfg.tone];
+  document.body.appendChild(travel);
+  document.body.appendChild(wash);
+  document.body.appendChild(veil);
+  t.freeze();
+
+  const start = function(){
+    /* the copy appears at full opacity exactly over the arch, then zooms */
+    travel.animate(zoomSteps(g), {duration:DREAM_TRAVEL, easing:DREAM_EASE, fill:"forwards"});
+    /* the scene's wash starts rising as it nears full screen */
+    wash.animate([{opacity:0}, {opacity:0, offset:.45}, {opacity:1}],
+      {duration:DREAM_TRAVEL, easing:"ease-in-out", fill:"forwards"});
+
+    /* from 600ms the scene washes toward the tone over 420ms, overlapping
+       the last of the zoom so it reads as one movement */
+    veil.animate([{opacity:0}, {opacity:1}],
+      {duration:DREAM_TONE_IN, delay:DREAM_TONE_AT, easing:"cubic-bezier(.45,0,.55,1)", fill:"forwards"})
+      .finished.catch(function(){}).then(function(){
+        /* only the tone is visible now: switch the page underneath it */
+        const since = performance.now();
+        travel.remove();
+        wash.remove();
+        showCase();
+        /* two frames so the case study has painted, and at least HOLD ms of
+           solid tone, before the veil starts to lift */
+        requestAnimationFrame(function(){ requestAnimationFrame(function(){
+          const wait = Math.max(0, DREAM_HOLD - (performance.now() - since));
+          setTimeout(function(){
+            veil.animate([{opacity:1}, {opacity:0}],
+              {duration:DREAM_LIFT, easing:"cubic-bezier(.33,0,.2,1)", fill:"forwards"})
+              .finished.catch(function(){}).then(function(){
+                veil.remove();
+                done();
+              });
+          }, wait);
+        }); });
+      });
+  };
+  travelReady(travel).then(function(){ requestAnimationFrame(start); });
+}
+
+/* ---- leaving a case study --------------------------------------------------
+   the case study fades into its tone (white for a light case, black for a
+   dark one) -> while the screen is solid, the page is put away and the shelf
+   is back underneath -> the tone lifts and the bookshelf emerges from it.
+   No nook artwork on the way back: the portal belongs to the way in.      */
+function leaveNook(id, btn){
+  const cfg = DREAM_CASES[id];
+  dreaming = true;
+  backBtn.hidden = true;
+  const veil = dreamLayer("nook-veil");
+  veil.style.background = DREAM_TONE[cfg.tone];
+  document.body.appendChild(veil);
+
+  veil.animate([{opacity:0}, {opacity:1}],
+    {duration:DREAM_TONE_IN, easing:"cubic-bezier(.45,0,.55,1)", fill:"forwards"})
+    .finished.catch(function(){}).then(function(){
+      const since = performance.now();
+      /* put the page away and the shelf back, all under solid tone */
+      overlay.classList.remove("shown");
+      overlay.hidden = true;
+      overlay.innerHTML = "";
+      hbDrift = [];
+      overlay.classList.remove("light");
+      backBtn.classList.remove("on-light");
+      document.querySelector(".nav").style.opacity = "";
+      document.querySelector(".nav").style.pointerEvents = "";
+      stage.removeAttribute("aria-hidden");
+
+      /* two frames so the shelf has painted, and a short hold of solid tone,
+         before the veil lifts to reveal it */
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){
+        const wait = Math.max(0, DREAM_HOLD - (performance.now() - since));
+        setTimeout(function(){
+          veil.animate([{opacity:1}, {opacity:0}],
+            {duration:DREAM_LIFT, easing:"cubic-bezier(.33,0,.2,1)", fill:"forwards"})
+            .finished.catch(function(){}).then(function(){
+              veil.remove();
+              dreaming = false;
+              if (btn) btn.focus({preventScroll:true});
+            });
+        }, wait);
+      }); });
+    });
+}
+
 function closeProject(){
-  if (!isOverlayOpen()) return;
+  if (!isOverlayOpen() || dreaming) return;
+  const leaving = openBtn && openBtn.dataset.project;
+  if (!REDUCE && leaving && DREAM_CASES[leaving] && DREAM_CASES[leaving].back){
+    leaveNook(leaving, openBtn);
+    return;
+  }
   overlay.classList.remove("shown");
   backBtn.hidden = true;
   const btn = openBtn;
@@ -3060,148 +3888,162 @@ document.addEventListener("click", function(e){
 /* ---- APP ICON ------------------------------------------------------------
    A path or URL for the app icon shown in the hero. Square image; it is
    rounded automatically. Leave empty for the built-in droplet mark.         */
-const APP_ICON = "";
+const APP_ICON = "images/hydrabloom/app cover.png";
 
 const SHOTS = {
-  hero1:"", hero2:"", hero3:"",
-  iter1a:"", iter1b:"", iter2a:"", iter2b:"", iter3a:"", iter3b:"",
-  onboarding:"", signin:"", dashboard:"",
-  goal:"", recommend:"", customise:"",
-  garden:"", growth:"", logging:"",
-  education:"", awareness:"", progress:""
+  hero1:"images/hydrabloom/happy cactus.png",
+  hero2:"images/hydrabloom/starting screen.png",
+  hero3:"images/hydrabloom/water tracker.png",
+  onboarding:"images/hydrabloom/starting screen.png",
+  signin:"images/hydrabloom/login.png",
+  dashboard:"images/hydrabloom/home screen.png",
+  goal:"images/hydrabloom/water tracker.png",
+  recommend:"images/hydrabloom/weight.png",
+  customise:"images/hydrabloom/intake.png",
+  sadcactus:"images/hydrabloom/sad cactus.png",
+  oldstart:"images/hydrabloom/old starting screen.png",
+  oldhome:"images/hydrabloom/old home screen.png",
+  oldcactus:"images/hydrabloom/old cactus.png",
+  garden:"images/hydrabloom/garden.png",
+  growth:"images/hydrabloom/happy cactus.png",
+  logging:"images/hydrabloom/add water.png",
+  education:"images/hydrabloom/hydrafacts.png?v=20260928",
+  /* re-exported 2026-09-28; the ?v= makes browsers fetch the new files
+     rather than showing an old cached copy */
+  awareness:"images/hydrabloom/benefits.png?v=20260928",
+  progress:"images/hydrabloom/stats.png?v=20260928"
 };
 
 /* all three research views share one row shape: a title and a short body */
 const HB_METHODS = [
-  ["Competitive analysis","Existing hydration apps reviewed for what keeps people logging, and for the moment each one loses them."],
-  ["User interviews","Informal conversations with students and busy individuals about when they drink water, and when they forget."],
-  ["Habit observation","Watching how people actually track intake across a day, and where the tracking quietly falls apart."],
-  ["Heuristic analysis","Nielsen heuristics and the Gulfs of Execution and Evaluation applied to competitor onboarding and logging flows."]
+  ["User interviews","I interviewed five students about their hydration habits, what makes it difficult to stay consistent, and their experiences with hydration apps."],
+  ["Competitive analysis","I looked at existing hydration apps to understand common tracking patterns, what worked well, and where the experience could feel overwhelming or repetitive."],
+  ["Affinity mapping","I grouped recurring patterns from the interviews to identify shared needs around forgetfulness, quick logging, motivation, and simplicity."],
+  ["Design opportunities","I translated those findings into opportunities for a simpler tracking experience with visible progress and positive reinforcement."]
 ];
 
 const HB_INSIGHTS = [
-  ["People forget, they don't refuse","Nobody interviewed disagreed that they should drink more water. The gap was attention, not willingness — which moves the design problem from persuasion to presence."],
-  ["A number is not a reward","Hitting a target in millilitres produced no feeling worth returning for. Progress had to become something you could watch change shape."],
-  ["Streaks punish more than they encourage","Once a streak broke, most people stopped opening the app at all. Any progress system needed a way to recover rather than reset."],
-  ["Slow days still need something to offer","On days when intake was low, an app with nothing to say got closed and forgotten. Education gave the product a second reason to exist."]
+  ["People forget, even when they mean to drink more","Participants generally wanted to drink more water. The bigger challenge was remembering throughout a busy day."],
+  ["Progress needs to feel rewarding","Simply watching a number increase wasn't very motivating. Participants responded more positively to the idea of seeing their progress represented visually."],
+  ["Missing a day shouldn't erase progress","Consistency wasn't always realistic. I wanted HydraBloom to encourage users to continue rather than make a missed day feel like starting over."],
+  ["Keep the experience simple","Participants preferred quick interactions and disliked cluttered experiences. Logging water needed to stay fast and easy to repeat."]
 ];
 
 const HB_COMPETITORS = [
-  ["Plant Nanny","<b>Does well:</b> growth as a reward, with real character in the art.","<b>Loses people:</b> progress can die permanently, which reads as punishment rather than feedback."],
-  ["WaterMinder","<b>Does well:</b> fast logging and precise, trustworthy data.","<b>Loses people:</b> purely numerical, so there is nothing to come back to once the entry is made."],
-  ["Hydro Coach","<b>Does well:</b> personalised targets calculated from body data.","<b>Loses people:</b> dense and clinical, with a steep first session before any payoff."],
-  ["Apple Health","<b>Does well:</b> already installed, with no setup required.","<b>Loses people:</b> hydration sits buried among dozens of other metrics and is easy to never find."]
+  ["My Water","<b>Strengths:</b> Keeps daily water tracking straightforward with goals and reminders.","<b>Opportunity:</b> The experience centers mostly on logging and notifications, leaving room for a more engaging sense of progress."],
+  ["WaterMinder","<b>Strengths:</b> Makes logging water quick and keeps daily intake easy to understand.","<b>Opportunity:</b> The experience focuses heavily on numbers, with fewer visual reasons to return beyond tracking."],
+  ["Hydro Coach","<b>Strengths:</b> Provides personalized hydration goals based on information provided by the user.","<b>Opportunity:</b> The amount of information and setup can make the experience feel more complex."],
+  ["Apple Health","<b>Strengths:</b> Keeps hydration data alongside other health information in one place.","<b>Opportunity:</b> Water tracking is only one of many features, so it can be less prominent in the overall experience."]
 ];
 
 const HB_ELEMENTS = [
   {k:"sun", name:"Sun", meaning:"Energy, motivation, and progress.",
-   where:"Appears in goal tracking, introducing daily motivation."},
-  {k:"sky", name:"Sky", meaning:"Clarity, reflection, and calmness.",
-   where:"Appears in onboarding, creating a calm environment."},
-  {k:"earth", name:"Earth", meaning:"Growth and evolution.",
-   where:"Appears in the garden, supporting visual growth."}
+   where:"Used throughout goal tracking to make progress feel bright and encouraging."},
+  {k:"sky", name:"Sky", meaning:"Clarity, calm, and openness.",
+   where:"Shapes the onboarding experience and creates a calm starting point for the user."},
+  {k:"earth", name:"Earth", meaning:"Growth and progress over time.",
+   where:"Comes through in the garden, where hydration progress becomes visible growth."}
 ];
 
 const HB_WALKS = [
   {title:"Getting started", element:"Sky",
    sub:"clarity, reflection, and calmness. These screens set a calm tone before the app asks anything at all.",
-   halo:"rgba(52,124,172,.72)", cast:"rgba(34,92,132,.5)", steps:[
-    ["Engaging onboarding","Introduces HydraBloom's playful visual identity and creates a welcoming first impression that encourages users to begin building healthy hydration habits.","onboarding"],
-    ["Seamless sign-in","Provides a straightforward login process that lets users securely reach their hydration data and personalised progress.","signin"],
-    ["Centralised dashboard","Organises key features into a clear navigation hub, so users can track intake, monitor garden growth, view statistics, and learn hydration facts.","dashboard"]
+   halo:"rgba(var(--hb-sky-rgb),.9)", cast:"rgba(var(--hb-sky-rgb),.75)", steps:[
+    ["Welcoming introduction","Introduces HydraBloom through its playful water-drop character and cloud-filled world, setting the tone before users begin their hydration journey.","onboarding"],
+    ["Personalized sign-in","Brings personalization into the experience from the start, placing the user’s profile photo within the sun as they sign in.","signin"],
+    ["Centralized dashboard","Brings the core experience into one place, giving users quick access to their daily goal, garden, progress, and hydration facts.","dashboard"]
   ]},
   {title:"Setting the goal", element:"Sun",
    sub:"energy, motivation, and progress. The daily target is set here, and the app starts giving something back.",
-   halo:"rgba(232,186,104,.4)", cast:"rgba(198,150,66,.22)", steps:[
-    ["Water goal creation","Users begin onboarding by creating a daily hydration goal that guides their progress throughout the app.","goal"],
-    ["Personalised recommendation","Using height and weight, HydraBloom calculates a recommended daily intake as a personalised starting point.","recommend"],
-    ["Flexible customisation","Users fine-tune the recommendation up or down to match their lifestyle, activity level, and preferences.","customise"]
+   halo:"rgba(var(--hb-sun-rgb),.9)", cast:"rgba(var(--hb-sun-rgb),.75)", steps:[
+    ["Set a daily goal","Users can create a daily hydration target that gives them a clear goal to work toward.","goal"],
+    ["Personalized recommendation","Using height and weight, HydraBloom suggests a daily water goal as a helpful starting point.","recommend"],
+    ["Flexible customization","Users can adjust the recommended amount to better fit their own routine and preferences.","customise"]
   ]},
   {title:"Growing the garden", element:"Earth",
    sub:"growth and evolution. Progress stops being a number to hit and becomes something visibly alive.",
-   halo:"rgba(78,134,58,.7)", cast:"rgba(58,104,42,.48)", steps:[
-    ["Gamified garden progress","Users watch their garden fill in and unlock new plants as they meet hydration goals, turning tracking into a reward.","garden"],
-    ["Real-time plant growth","Each entry contributes to growth, giving immediate visual feedback that reinforces the habit and celebrates progress.","growth"],
-    ["Effortless water tracking","Preset amounts and custom entries make logging quick enough to stay consistent through the day.","logging"]
+   halo:"rgba(var(--hb-earth-rgb),.9)", cast:"rgba(var(--hb-earth-rgb),.75)", steps:[
+    ["Garden progression","Users build out their garden over time, unlocking new plants as they continue reaching their hydration goals.","garden"],
+    ["Growth as feedback","Each water entry contributes to plant growth, turning hydration progress into an immediate visual reward.","growth"],
+    ["Quick water logging","Preset amounts and a custom option make adding water fast and easy throughout the day.","logging"]
   ]}
 ];
 
 const HB_KNOW = [
-  ["education","Hydration education","Short, readable facts turn the app into something worth opening even on a slow day. Learning is framed as approachable rather than clinical, so it rewards curiosity instead of testing knowledge."],
-  ["awareness","Hydration awareness","Gentle prompts connect what someone drank to how they feel. The tone stays encouraging — the app notices a quiet day without scolding anyone for it."],
-  ["progress","Progress at a glance","Milestones and history appear as a garden filling in over time rather than a chart of misses, so looking back feels like reviewing growth instead of auditing failure."]
+  ["education","Hydration education","HydraFacts makes hydration information easy to explore, breaking down the benefits of drinking water into simple, approachable categories."],
+  ["awareness","Hydration awareness","Selecting a topic reveals quick facts about how hydration supports the body and mind."],
+  ["progress","Progress at a glance","Weekly hydration, streaks, plant growth, and monthly goals bring progress together in one place so users can quickly see how they’re doing."]
 ];
 
 /* the loop the product is trying to break */
 const HB_CYCLE = [
-  ["Forget","The day fills up. Water is never the thing you are thinking about."],
-  ["Get reminded","A notification arrives, usually at the wrong moment, and gets swiped away."],
-  ["Log water","You drink, you tap, a number goes up. Nothing about it asks you to return."],
-  ["Forget again","With no reason to reopen the app, the habit resets and the loop starts over."]
+  ["Forget","The day gets busy, and drinking water slips out of mind."],
+  ["Get reminded","A notification appears, but it’s easy to dismiss in the moment."],
+  ["Log water","Water gets logged, but the interaction offers little motivation to return."],
+  ["Forget again","Without a sense of progress, the routine fades and the cycle starts over."]
 ];
 
 /* who the research pointed at — three profiles the whole product answers to */
 const HB_PERSONAS = [
-  {initial:"M", tint:"#e0a52c", name:"Maya", meta:"20 · Full-time student",
-   quote:"I don't forget on purpose. I look up and it's 4pm and I've had a coffee.",
-   goal:"A habit that survives an exam week, not just a calm one.",
-   friction:"Reminders arrive mid-lecture and get swiped away without reading."},
-  {initial:"D", tint:"#3f88b4", name:"Devin", meta:"24 · Grad student, works part-time",
-   quote:"I broke a twelve-day streak and just deleted it. It felt like being told off.",
-   goal:"To see effort accumulate into something worth looking back at.",
-   friction:"Percentages mean nothing to him, and losing a streak ends the relationship."},
-  {initial:"P", tint:"#5a9143", name:"Priya", meta:"22 · Commuter student",
-   quote:"There were so many buttons. I only ever wanted to press one.",
-   goal:"To log a glass in the seconds between a lecture and a bus.",
-   friction:"Dense dashboards bury the single action she opens the app to do."}
+  {initial:"M", tint:"var(--hb-sun)", name:"Maya", meta:"20 · Full-time student",
+   quote:"I'll bring my water bottle with me and still forget to actually drink from it.",
+   goal:"Something that helps her remember without feeling annoying.",
+   friction:"When she's busy with school, drinking water isn't something she thinks about."},
+  {initial:"D", tint:"var(--hb-sky)", name:"Devin", meta:"24 · Grad student, works part-time",
+   quote:"Seeing a number go up doesn't really make me want to keep checking the app.",
+   goal:"To see the progress he's making and have a reason to keep going.",
+   friction:"Tracking starts to feel repetitive, so he loses interest after a few days."},
+  {initial:"P", tint:"var(--hb-earth)", name:"Priya", meta:"22 · Commuter student",
+   quote:"I don't want to go through a bunch of steps just to say I drank some water.",
+   goal:"A quick way to log water and move on with her day.",
+   friction:"Too many steps or features make a simple task feel like extra work."}
 ];
 
 /* every decision traced back to a finding *//* every decision traced back to a finding */
 const HB_BRIDGE = [
-  ["People forget, they don't refuse","Quick Add and gentle reminders",
-   "One tap logs a preset amount from the home screen, and prompts arrive as encouragement rather than an alarm."],
-  ["A number is not a reward","Visible plant growth",
-   "Progress is shown as something changing shape rather than a percentage, so there is a reason to look again tomorrow."],
-  ["Clutter buried the one action","A simplified dashboard",
-   "The home screen carries logging first and everything else second, so the common task is never more than one tap deep."],
-  ["Positive reinforcement held attention","Garden rewards, never punishment",
-   "New plants unlock as goals are met, and a missed day wilts rather than deletes — the garden can always recover."]
+  ["Remembering was the biggest challenge","Quick Add and gentle reminders",
+   "Quick Add makes logging water fast, while reminders help bring hydration back to mind throughout the day."],
+  ["Progress needed to feel rewarding","Visible garden growth",
+   "Each logged drink contributes to the garden, turning daily progress into something users can actually see grow."],
+  ["Logging needed to stay simple","A simplified dashboard",
+   "The most important actions stay easy to find, keeping water tracking quick and reducing unnecessary steps."],
+  ["Missing a day shouldn't erase progress","Encouragement over punishment",
+   "Progress isn't reset after a missed day, allowing users to continue where they left off instead of starting over."]
 ];
 
 /* one path through the product, and the places it can branch. every screen
    reuses a SHOTS key, so filling a slot once populates it everywhere. */
 const HB_FLOW = [
-  ["onboarding","First launch","The pitch, in three cards"],
-  ["signin",    "Sign in",     "Account created or restored"],
-  ["dashboard", "Home",        "Everything hangs off here",  true],
-  ["logging",   "Log water",   "One tap on a preset"],
-  ["progress",  "Goal met",    "The ring closes for the day"],
-  ["growth",    "Plant grows", "The day pays off"]
+  ["onboarding","First launch","Meet HydraBloom"],
+  ["signin",    "Sign in",     "Stay signed in"],
+  ["dashboard", "Home",        "Daily check-in",  true],
+  ["garden",    "Visit garden","Check on your plants"],
+  ["sadcactus", "Log water",   "Add your water intake"],
+  ["growth",    "Plant grows", "Watch it grow"]
 ];
 const HB_FLOW_ALT = [
-  ["garden",   "Garden"],
-  ["goal",     "Your goal"],
-  ["education","Hydrafacts"]
+  ["goal",     "Water tracker","Adjust your daily goal"],
+  ["progress", "Stats",        "Track your progress"],
+  ["education","HydraFacts",   "Learn about hydration"]
 ];
 
 /* what changed between the first pass and the final one */
 const HB_ITERS = [
-  {title:"Logging water",
-   was:["iter1a","First idea"], now:["iter1b","Where it landed"],
-   note:"A modal with a number pad meant four taps to record a glass. Presets on the home screen brought it down to one, and logging frequency in testing went up straight away."},
-  {title:"The dashboard",
-   was:["iter2a","First idea"], now:["iter2b","Where it landed"],
-   note:"The first layout gave equal weight to stats, facts, garden and history. Nobody could find the log button. The final version leads with the day's progress and demotes everything else."},
-  {title:"Progress and setbacks",
-   was:["iter3a","First idea"], now:["iter3b","Where it landed"],
-   note:"An early version reset the garden after a missed day. Testers found that punishing, so plants now wilt and recover instead — the same signal without the guilt."}
-];
-
-const HB_FAQ = [
-  ["What was the biggest takeaway?","Placeholder answer. The short version: motivation is easier to design for than discipline. People kept using the app when it showed them something alive, not when it showed them a number they had missed."],
-  ["Why the Sun, Sky, and Earth theme?","Placeholder answer. Hydration is a cycle rather than a target, so the visual system borrows one. Sun carries energy and motivation, sky carries calm and clarity, earth carries growth over time — and each maps to a real part of the product rather than sitting on top as decoration."],
-  ["Why Hydrafacts?","Placeholder answer. Education gave the app something to say on days when progress was slow, so opening it still returned something."],
-  ["What would you improve next?","Placeholder answer. More states for the garden between thriving and wilting, and a gentler recovery path after a missed stretch."]
+  {label:"01 — Brand", title:"Finding HydraBloom’s identity",
+   was:["oldstart","First idea"], now:["onboarding","Where it landed"],
+   note:"“Diva Hydrate” became HydraBloom, creating a more polished identity while the new water-drop mascot gave the experience a friendlier, more recognizable personality.",
+   compare:[["Identity","Diva Hydrate → HydraBloom"],["Character","Sprout → Water-drop mascot"],
+     ["Brand experience","Academic project feel → More recognizable, cohesive identity"]]},
+  {label:"02 — Experience", title:"Building out the home experience",
+   was:["oldhome","First idea"], now:["dashboard","Where it landed"],
+   note:"The original three-option menu grew into a more complete home experience while staying simple and easy to scan.",
+   compare:[["Features","3 destinations → 4 core destinations"],["Focus","Basic navigation → Daily hydration at the center"],
+     ["Experience","Simple menu → More complete home experience"]]},
+  {label:"03 — Character", title:"Giving the garden more character",
+   was:["oldcactus","First idea"], now:["growth","Where it landed"],
+   note:"The cactus was one example of a larger visual upgrade across the garden. Every plant was redesigned with softer shapes, more expressive details, and stronger personality so growing a collection would feel more rewarding.",
+   compare:[["Form","Hard edges → Softer, rounded shapes"],["Feedback","Simple progress → More expressive growth rewards"],
+     ["Character","Static plants → A garden users can grow and care for"]]}
 ];
 
 /* Two halves of the same pair of rings. "back" draws the arcs that pass behind
@@ -3261,9 +4103,9 @@ function hydrabloomCase(){
   h += '<div class="hb-track" aria-hidden="true"><div class="hb-fill"></div></div>'
      + '<span class="hb-sun" aria-hidden="true"></span>';
 
-  [["26%","-12%","60vw","#ffe9be",.42],["36%","56%","48vw","#fff3d8",.36],
-   ["56%","-14%","58vw","#c9e4f5",.42],["64%","54%","50vw","#dcf0f7",.36],
-   ["81%","-10%","56vw","#d3e9b6",.42]].forEach(function(a){
+  [["26%","-12%","60vw","var(--sun-soft)",.42],["36%","56%","48vw","var(--sun-light)",.36],
+   ["56%","-14%","58vw","var(--sky-soft)",.42],["64%","54%","50vw","var(--sky-light)",.36],
+   ["81%","-10%","56vw","var(--earth-soft)",.42]].forEach(function(a){
     h += '<div class="hb-aura" aria-hidden="true" style="top:' + a[0] + ';left:' + a[1]
        + ';width:' + a[2] + ';height:' + a[2] + ';background:' + a[3] + ';opacity:' + a[4] + '"></div>';
   });
@@ -3279,7 +4121,8 @@ function hydrabloomCase(){
      +     (APP_ICON ? ' style="background-image:url(\'' + APP_ICON + '\')"' : '')
      +     '><i></i><b></b></div>'
      +   '<h1 class="hb-word2 reveal d1" id="csTitle">HydraBloom</h1>'
-     +   '<p class="hb-desc reveal d2">' + p.sub + '<br>A daily target you can watch grow.</p>'
+     +   '<p class="hb-desc reveal d2">Turning hydration into a habit you can grow.'
+     +   '<br>A playful approach to building healthier daily routines.</p>'
      +   '<dl class="hb-meta reveal d3">';
   p.meta.forEach(function(m){ h += '<div><dt>' + m[0] + '</dt><dd>' + m[1] + '</dd></div>'; });
   h += '</dl></div>'
@@ -3299,7 +4142,7 @@ function hydrabloomCase(){
   /* ---- overview + chapters ---- */
   h += '<section class="hb-sec"><div>'
      + '<p class="hb-eyebrow reveal">HydraBloom overview</p>'
-     + '<h2 class="hb-xl wide reveal d1">A playful hydration concept shaped by research, onboarding, daily goals, garden progress, and simple education moments.</h2>'
+     + '<h2 class="hb-xl wide reveal d1" data-hb-nofit>HydraBloom is a gamified hydration tracker designed to help users build consistent habits through simple tracking, visual progress, and positive reinforcement.</h2>'
      + '<ol class="hb-chapters reveal d2">';
   [["01","Research and concept framing","hb-01"],
    ["02","Onboarding, goals, and garden growth","hb-02"],
@@ -3313,10 +4156,10 @@ function hydrabloomCase(){
   h += '<section class="hb-sec" id="hb-01">' + driftLayer("sun", 6) + '<div>'
      + '<p class="hb-eyebrow reveal">01 — Research and concept framing</p>'
      + '<h2 class="hb-statement reveal d1">We know we should drink water.<br>'
-     +   '<em>So why do we keep forgetting?</em></h2>'
-     + '<p class="hb-lead reveal d2">Not for lack of trying. Everyone interviewed already owned a '
-     +   'water bottle and had installed a tracker at some point. The habit did not fail at the point '
-     +   'of intention — it failed a few days in, always the same way.</p>'
+     +   '<em><span>So why do we keep</span> <span>forgetting?</span></em></h2>'
+     + '<p class="hb-lead reveal d2">The problem wasn\'t a lack of intention. Participants wanted to '
+     +   'drink more water, but staying consistent was the challenge. Reminders were easy to dismiss, '
+     +   'logging felt repetitive, and without a reason to return, the habit quickly faded.</p>'
      + '<ol class="hb-cycle reveal d2">';
   HB_CYCLE.forEach(function(c, i){
     h += '<li><span class="n">0' + (i+1) + '</span><h4>' + c[0] + '</h4><p>' + c[1] + '</p></li>';
@@ -3330,13 +4173,18 @@ function hydrabloomCase(){
   /* ---- what the project set out to do about it ---- */
   h += '<section class="hb-sec"><div>'
      + '<h2 class="hb-xl reveal">Project overview</h2>'
-     + '<p class="hb-lead reveal d1">Breaking that loop meant giving the habit somewhere to '
-     +   'accumulate. HydraBloom pairs hydration tracking with a garden that grows as goals are '
-     +   'met, so progress is something you can watch change rather than a number you are told.</p>'
+     + '<p class="hb-lead reveal d1">HydraBloom was created as an academic UX/UI project focused on '
+     +   'taking a user need from research through a complete high-fidelity experience.</p>'
      + '<div class="hb-cards">'
-     + '<div class="hb-card reveal d1"><h3>Design goal</h3><p>Placeholder copy. Make progress something you can watch grow, so the reward for drinking water is visual rather than numerical.</p></div>'
-     + '<div class="hb-card reveal d2"><h3>Project context</h3><p>Placeholder copy. Self-directed product design project covering research, IA, the visual system, and high-fidelity screens.</p></div>'
-     + '<div class="hb-card reveal d3"><h3>My role</h3><p>Placeholder copy. Sole designer across research, concept, interaction, visual system, and the final high-fidelity screens.</p></div>'
+     + '<div class="hb-card reveal d1" style="--tint:var(--sun)">'
+     +   '<span class="rule" aria-hidden="true"></span><h3>Design challenge</h3>'
+     +   '<p>How might we create a hydration experience that gives users a meaningful reason to return beyond reminders and numbers?</p></div>'
+     + '<div class="hb-card reveal d2" style="--tint:var(--sky)">'
+     +   '<span class="rule" aria-hidden="true"></span><h3>Project scope</h3>'
+     +   '<p>An 8-week academic project covering user research, ideation, information architecture, wireframing, prototyping, and high-fidelity design.</p></div>'
+     + '<div class="hb-card reveal d3" style="--tint:var(--earth)">'
+     +   '<span class="rule" aria-hidden="true"></span><h3>My role</h3>'
+     +   '<p>I led the design process from research and concept development through interaction and visual design, bringing the final experience together in a high-fidelity prototype.</p></div>'
      + '</div></div></section>';
 
   /* ---- research: evidence first, then the three views ---- */
@@ -3388,7 +4236,7 @@ function hydrabloomCase(){
   /* ---- research to design decision ---- */
   h += '<section class="hb-sec">' + driftLayer("sky", 5) + '<div>'
      + '<p class="hb-eyebrow reveal">From research to design</p>'
-     + '<h2 class="hb-xl wide reveal d1">Every decision traces back to something somebody said.</h2>'
+     + '<h2 class="hb-xl wide reveal d1">Every insight shaped a design decision.</h2>'
      + '<ul class="hb-bridge reveal d2">';
   HB_BRIDGE.forEach(function(b){
     h += '<li>'
@@ -3402,13 +4250,13 @@ function hydrabloomCase(){
   /* ---- introducing card ---- */
   h += '<section class="hb-intro" id="hb-intro"><div class="hb-intro-wrap">'
      + '<div class="hb-intro-card" data-hb-introcard>'
-     +   '<span class="hb-orb" aria-hidden="true" style="left:-8%;top:-30%;width:46%;aspect-ratio:1;background:#ffeac2"></span>'
-     +   '<span class="hb-orb" aria-hidden="true" style="right:-10%;bottom:-34%;width:52%;aspect-ratio:1;background:#cbe5f6"></span>'
-     +   '<span class="hb-orb" aria-hidden="true" style="left:38%;bottom:-40%;width:40%;aspect-ratio:1;background:#d5eab9"></span>'
+     +   '<span class="hb-orb" aria-hidden="true" style="left:-10%;top:-34%;width:52%;aspect-ratio:1;background:var(--sun-soft)"></span>'
+     +   '<span class="hb-orb" aria-hidden="true" style="right:-14%;bottom:-38%;width:58%;aspect-ratio:1;background:var(--sky-soft)"></span>'
+     +   '<span class="hb-orb" aria-hidden="true" style="left:34%;bottom:-46%;width:46%;aspect-ratio:1;background:var(--earth-soft)"></span>'
+     +   '<span class="hb-orb" aria-hidden="true" style="left:50%;top:-22%;width:26%;aspect-ratio:1;background:var(--sun-soft);transform:translateX(-50%)"></span>'
      +   '<h2>' + "Now introducing HydraBloom.".split(" ").map(function(w,i){
            return '<span style="transition-delay:' + (i*0.12).toFixed(2) + 's">' + w + '&nbsp;</span>';
          }).join("") + '</h2>'
-     +   '<p class="sub">Three ideas hold the product together — and every one of them comes from somewhere in the sky.</p>'
      + '</div></div></section>';
 
   /* ---- visual system ---- */
@@ -3433,9 +4281,8 @@ function hydrabloomCase(){
      + '<div class="hb-type-meta">'
      +   '<b>DynaPuff</b>'
      +   '<span class="cut">Bold &middot; 700</span>'
-     +   '<p>Rounded, buoyant, and a little soft at the edges — it carries the '
-     +   'app\'s warmth without tipping into something childish, and reads clearly '
-     +   'at the small sizes the interface needs.</p>'
+     +   '<p>I chose DynaPuff for its rounded, playful shape, which fits '
+     +   'HydraBloom\'s friendly and encouraging personality.</p>'
      + '</div></div>';
 
   h += '</div></section>';
@@ -3448,16 +4295,31 @@ function hydrabloomCase(){
        + ' style="--halo:' + w.halo + ';--halo-cast:' + w.cast + '">'
        + '<h3 class="hb-xl reveal">' + w.title + '</h3>'
        + '<p class="hb-walk-sub reveal d1"><b>' + w.element + '</b> — ' + w.sub + '</p>'
-       + '<div class="hb-walk-grid"><ol class="hb-numbers reveal d1">';
+       + '<div class="hb-carousel reveal d2">'
+       +   '<div class="hb-car-stage">'
+       +     '<button type="button" class="hb-car-nav prev" data-hb-car="prev" aria-label="Previous screen"><i aria-hidden="true"></i></button>'
+       +     '<div class="hb-car-track">'
+       +       '<span class="hb-car-glow" aria-hidden="true"></span>';
     w.steps.forEach(function(st, si){
-      h += '<li><button type="button" aria-selected="' + (si === 0) + '" data-hb-step="' + si + '">'
-         + '<span class="n">' + (si+1) + '</span>'
-         + '<span><h4>' + st[0] + '</h4><p>' + st[1] + '</p></span></button></li>';
+      h += '<div class="hb-car-slot" data-hb-car-slot="' + si + '" role="button" tabindex="-1"'
+         +   ' aria-label="Show screen ' + (si+1) + ': ' + st[0] + '">'
+         +   hbPhone(st[2], st[0])
+         + '</div>';
     });
-    h += '</ol><div class="hb-walk-stage reveal d2">'
-       + '<span class="halo" aria-hidden="true"></span>'
-       + '<div class="hb-float">' + hbPhone(w.steps[0][2], w.steps[0][0]) + '</div>'
-       + '</div></div></div>';
+    h +=     '</div>'
+       +     '<button type="button" class="hb-car-nav next" data-hb-car="next" aria-label="Next screen"><i aria-hidden="true"></i></button>'
+       +   '</div>'
+       +   '<div class="hb-car-caption">'
+       +     '<p class="hb-car-n" data-hb-car-n></p>'
+       +     '<h4 class="hb-car-title" data-hb-car-title></h4>'
+       +     '<p class="hb-car-desc" data-hb-car-desc></p>'
+       +   '</div>'
+       +   '<div class="hb-car-dots" data-hb-car-dots>';
+    w.steps.forEach(function(st, si){
+      h += '<button type="button" data-hb-car-dot="' + si + '" aria-label="Go to screen ' + (si+1) + '"></button>';
+    });
+    h +=   '</div>'
+       + '</div></div>';
   });
   h += '</div></section>';
 
@@ -3477,9 +4339,9 @@ function hydrabloomCase(){
   /* ---- how someone moves through it ---- */
   h += '<section class="hb-sec" id="hb-flow">' + driftLayer("earth", 5) + '<div>'
      + '<p class="hb-eyebrow reveal">User flow</p>'
-     + '<h2 class="hb-xl reveal d1">How someone moves through the app</h2>'
-     + '<p class="hb-lead reveal d2">The path from a cold open to a first reward, and the '
-     +   'three places the home screen lets you step off it.</p>'
+     + '<h2 class="hb-xl reveal d1">The everyday experience</h2>'
+     + '<p class="hb-lead reveal d2">HydraBloom keeps the daily routine simple: check in, log '
+     +   'water, and watch your garden respond.</p>'
      + '<div class="hb-flow reveal d2"><ol class="hb-flow-main">';
   HB_FLOW.forEach(function(f, i){
     h += '<li class="hb-fnode' + (f[3] ? ' hub' : '') + '">'
@@ -3492,7 +4354,7 @@ function hydrabloomCase(){
      + '<div class="hb-flow-alt">'
      +   '<p class="from">From <b>Home</b>, the flow can also branch to</p><ul>';
   HB_FLOW_ALT.forEach(function(a){
-    h += '<li>' + hbFrame(a[0], a[1]) + '<h4>' + a[1] + '</h4></li>';
+    h += '<li>' + hbFrame(a[0], a[1]) + '<h4>' + a[1] + '</h4><p>' + a[2] + '</p></li>';
   });
   h += '</ul></div></div></div></section>';
 
@@ -3500,38 +4362,89 @@ function hydrabloomCase(){
   h += '<section class="hb-sec">' + driftLayer("earth", 5) + '<div>'
      + '<p class="hb-eyebrow reveal">Iteration</p>'
      + '<h2 class="hb-xl reveal d1">What changed along the way</h2>'
-     + '<p class="hb-lead reveal d2">Three things did not survive first contact with a tester. '
-     +   'Each went through a version that made sense on paper and not in a hand.</p>'
+     + '<p class="hb-lead reveal d2">HydraBloom evolved across three areas: its brand, the '
+     +   'everyday experience, and the characters that bring it to life.</p>'
      + '<div class="hb-iters">';
   HB_ITERS.forEach(function(it, i){
     h += '<article class="hb-iter reveal d' + Math.min(i+1, 3) + '">'
+       +   '<p class="hb-iter-label">' + it.label + '</p>'
        +   '<h4>' + it.title + '</h4>'
        +   '<div class="hb-iter-row">'
-       +     '<figure>' + hbFrame(it.was[0], it.was[1], true)
+       +     '<figure class="hb-iter-fig was">' + hbFrame(it.was[0], it.was[1], true)
        +       '<figcaption>' + it.was[1] + '</figcaption></figure>'
        +     '<span class="hb-iter-arrow" aria-hidden="true"></span>'
-       +     '<figure>' + hbFrame(it.now[0], it.now[1])
+       +     '<figure class="hb-iter-fig now">' + hbFrame(it.now[0], it.now[1])
        +       '<figcaption>' + it.now[1] + '</figcaption></figure>'
        +   '</div>'
-       +   '<p class="hb-iter-note"><b>What wasn\'t working:</b> ' + it.note + '</p>'
+       +   '<p class="hb-iter-note"><b>What changed:</b> ' + it.note + '</p>'
+       +   '<dl class="hb-iter-compare">'
+       +     it.compare.map(function(c){
+                return '<div><dt>' + c[0] + '</dt><dd>' + c[1] + '</dd></div>';
+              }).join('')
+       +   '</dl>'
        + '</article>';
   });
   h += '</div></div></section>';
 
-  /* ---- reflection ---- */
-  h += '<section class="hb-sec"><div>'
-     + '<p class="hb-eyebrow reveal">FAQ</p>'
-     + '<h2 class="hb-xl reveal d1">Project reflection</h2>'
-     + '<p class="hb-lead reveal d2">That\'s it for now, thanks for stopping by. A quick Q&amp;A on the decisions, the lessons, and where HydraBloom goes next.</p>'
-     + '<div class="hb-glass reveal d2" data-hb-glass><div class="hb-faq">';
-  HB_FAQ.forEach(function(q, i){
-    h += '<div class="hb-q">'
-       + '<button type="button" aria-expanded="false" data-hb-q="' + i + '">'
-       + '<span class="n">0' + (i+1) + '</span><span class="q">' + q[0] + '</span>'
-       + '<span class="pm" aria-hidden="true"></span></button>'
-       + '<div class="hb-a" id="hb-a-' + i + '"><p>' + q[1] + '</p></div></div>';
-  });
-  h += '</div></div></div></section>';
+  /* ---- design growth: a personal note on learning Figma through this project ---- */
+  h += '<section class="hb-sec" id="hb-growth"><div>'
+     + '<p class="hb-eyebrow reveal">Design growth</p>'
+     + '<h2 class="hb-xl reveal d1">The app wasn\'t the only thing evolving</h2>'
+     + '<p class="hb-lead reveal d2">HydraBloom was actually the first project I ever designed '
+     +   'in Figma, and the differences between these screens reflect how much I was learning '
+     +   'along the way. The original screens, for example, were much more colorful and '
+     +   'saturated than they appear here. As a beginner, I relied heavily on lowering opacity '
+     +   'to create lighter colors instead of choosing lighter tints. I didn\'t realize that '
+     +   'transparency could interact with the background and make those colors appear '
+     +   'differently when the prototype was actually run.</p>'
+     + '<p class="hb-lead reveal d2">Since then, I\'ve learned much more about Figma and how to '
+     +   'build intentionally — from mastering Auto Layout and reusable components to creating '
+     +   'stronger visual hierarchy and more consistent design systems. Many of these '
+     +   'fundamentals were things I overlooked at the time while trying to learn a new tool '
+     +   'and complete an academic project within a time crunch.</p>'
+     + '<p class="hb-lead reveal d2">HydraBloom still has plenty of room to grow, and so do I. '
+     +   'It was challenging, but it was also the project that really sparked my interest in '
+     +   'design. I had so much fun bringing the idea to life that I wanted to keep learning, '
+     +   'experimenting, and becoming a better designer beyond the classroom.</p>'
+     + '<div class="hb-progress reveal d3">'
+     +   '<div class="hb-progress-row">'
+     +     '<div class="hb-pg-stage s1"><span class="zone" aria-hidden="true"><i></i><i></i><i></i></span>'
+     +       '<span class="label">First Figma project</span></div>'
+     +     '<div class="hb-pg-link"><span class="line" aria-hidden="true"></span></div>'
+     +     '<div class="hb-pg-stage s2"><span class="zone" aria-hidden="true"><i></i><i></i><i></i></span>'
+     +       '<span class="label">Learning as I built</span></div>'
+     +     '<div class="hb-pg-link"><span class="line" aria-hidden="true"></span></div>'
+     +     '<div class="hb-pg-stage s3"><span class="zone" aria-hidden="true"><i></i><i></i><i></i></span>'
+     +       '<span class="label">Designing with intention</span></div>'
+     +   '</div>'
+     + '</div>'
+     + '</div></section>';
+
+  /* ---- if I were designing it today: four ideas for where it could go ---- */
+  h += '<section class="hb-sec" id="hb-next"><div>'
+     + '<p class="hb-eyebrow reveal">Looking ahead</p>'
+     + '<h2 class="hb-xl wide reveal d1">If I were designing HydraBloom today…</h2>'
+     + '<p class="hb-lead reveal d2">HydraBloom started as a class project, but there is a lot I would '
+     +   'approach differently now. With what I have learned since then, I would push the experience '
+     +   'beyond simply tracking water and make it more flexible, social, and rewarding.</p>'
+     + '<div class="hb-ideas">'
+     + '<article class="hb-idea reveal d1" style="--tint:var(--sky)">'
+     +   '<div class="hb-idea-art" aria-hidden="true"><div class="ia-type"><div class="ia-row"><span class="a1">Aa</span><span class="a2">Aa</span><span class="a3">Aa</span></div><div class="scale"><i></i><i></i><i></i></div></div></div>'
+     +   '<span class="num">01</span><h3>A more flexible visual system</h3>'
+     +   '<p>I relied heavily on DynaPuff throughout the original app. If I redesigned it today, I would introduce more variety in the typography and build a clearer type system while preserving HydraBloom\'s playful personality.</p></article>'
+     + '<article class="hb-idea reveal d2" style="--tint:var(--earth)">'
+     +   '<div class="hb-idea-art" aria-hidden="true"><svg viewBox="0 0 200 120" role="presentation"><path d="M46 30 Q100 2 154 30" fill="none" stroke="#22302a" stroke-opacity=".32" stroke-width="1.6" stroke-dasharray="1.5 4.5" stroke-linecap="round"/><circle cx="46" cy="30" r="9" style="fill:#fff;stroke:var(--earth-ink)" stroke-width="1.6"/><circle cx="46" cy="28" r="3.2" style="fill:var(--earth-ink)" opacity=".7"/><path d="M40.5 35.5a6 4.6 0 0 1 11 0" style="stroke:var(--earth-ink)" stroke-width="1.6" fill="none" opacity=".7"/><circle cx="100" cy="16" r="9" style="fill:#fff;stroke:var(--sky-ink)" stroke-width="1.6"/><circle cx="100" cy="14" r="3.2" style="fill:var(--sky-ink)" opacity=".7"/><path d="M94.5 21.5a6 4.6 0 0 1 11 0" style="stroke:var(--sky-ink)" stroke-width="1.6" fill="none" opacity=".7"/><circle cx="154" cy="30" r="9" style="fill:#fff;stroke:var(--sun-ink)" stroke-width="1.6"/><circle cx="154" cy="28" r="3.2" style="fill:var(--sun-ink)" opacity=".7"/><path d="M148.5 35.5a6 4.6 0 0 1 11 0" style="stroke:var(--sun-ink)" stroke-width="1.6" fill="none" opacity=".7"/><line x1="18" y1="108" x2="182" y2="108" stroke="#22302a" stroke-opacity=".18" stroke-width="1.4" stroke-linecap="round"/><path d="M46 88 V64" style="stroke:var(--earth-ink)" stroke-width="2" stroke-linecap="round"/><ellipse cx="39" cy="72" rx="7" ry="4" transform="rotate(-28 39 72)" style="fill:var(--earth)"/><ellipse cx="53" cy="67" rx="7" ry="4" transform="rotate(28 53 67)" style="fill:var(--earth)"/><path d="M100 88 V52" style="stroke:var(--earth-ink)" stroke-width="2" stroke-linecap="round"/><ellipse cx="92" cy="72" rx="8" ry="4.4" transform="rotate(-28 92 72)" style="fill:var(--earth)"/><ellipse cx="108" cy="62" rx="8" ry="4.4" transform="rotate(28 108 62)" style="fill:var(--earth)"/><circle cx="100" cy="49" r="5.5" style="fill:var(--sun)"/><circle cx="100" cy="49" r="2.2" style="fill:var(--sun-ink)" opacity=".55"/><path d="M154 88 V70" style="stroke:var(--earth-ink)" stroke-width="2" stroke-linecap="round"/><ellipse cx="148" cy="75" rx="6" ry="3.6" transform="rotate(-28 148 75)" style="fill:var(--earth)"/><ellipse cx="160" cy="72" rx="6" ry="3.6" transform="rotate(28 160 72)" style="fill:var(--earth)"/><path d="M33 88 h26 l-3.5 20 h-19 z" style="fill:var(--sun-soft);stroke:var(--sun-ink)" stroke-opacity=".45" stroke-width="1.3" stroke-linejoin="round"/><path d="M87 88 h26 l-3.5 20 h-19 z" style="fill:var(--sky-soft);stroke:var(--sky-ink)" stroke-opacity=".45" stroke-width="1.3" stroke-linejoin="round"/><path d="M141 88 h26 l-3.5 20 h-19 z" style="fill:var(--earth-soft);stroke:var(--earth-ink)" stroke-opacity=".45" stroke-width="1.3" stroke-linejoin="round"/></svg></div>'
+     +   '<span class="num">02</span><h3>Grow together</h3>'
+     +   '<p>I would bring more community into the experience by allowing users to connect with friends, share their gardens, compare progress, and participate in friendly competition. This could make hydration feel more engaging while strengthening the game experience.</p></article>'
+     + '<article class="hb-idea reveal d3" style="--tint:var(--sun)">'
+     +   '<div class="hb-idea-art" aria-hidden="true"><svg viewBox="0 0 200 120" role="presentation"><path d="M44 84 V52" style="stroke:var(--earth-ink)" stroke-width="2.2" stroke-linecap="round"/><ellipse cx="35" cy="66" rx="9" ry="5" transform="rotate(-30 35 66)" style="fill:var(--earth)"/><ellipse cx="53" cy="58" rx="9" ry="5" transform="rotate(30 53 58)" style="fill:var(--earth)"/><ellipse cx="38" cy="50" rx="6.5" ry="3.8" transform="rotate(-40 38 50)" style="fill:var(--earth)"/><path d="M30 84 h28 l-4 22 h-20 z" style="fill:var(--sun-soft);stroke:var(--sun-ink)" stroke-opacity=".45" stroke-width="1.3" stroke-linejoin="round"/><path d="M66 34 l1.8 4.6 4.6 1.8 -4.6 1.8 -1.8 4.6 -1.8 -4.6 -4.6 -1.8 4.6 -1.8z" style="fill:var(--sun-ink)" opacity=".7"/><path d="M22 38 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z" style="fill:var(--sun-ink)" opacity=".5"/><rect x="84" y="56" width="98" height="14" rx="7" style="fill:#fff;stroke:#22302a" stroke-opacity=".16" stroke-width="1.2"/><rect x="86" y="58" width="52" height="10" rx="5" style="fill:var(--sky)"/><rect x="136" y="58" width="24" height="10" rx="5" style="fill:var(--sun)"/><path d="M98 20 C98 20 91 29 91 34 a7 7 0 0 0 14 0 C105 29 98 20 98 20z" style="fill:var(--sky);stroke:var(--sky-ink)" stroke-opacity=".5" stroke-width="1.2"/><path d="M129 22 l8 4.6 v9.2 l-8 4.6 -8 -4.6 v-9.2z" style="fill:var(--sun);stroke:var(--sun-ink)" stroke-opacity=".5" stroke-width="1.2" stroke-linejoin="round"/><path d="M126.4 31.4 h5.2 M129 28.8 v5.2" style="stroke:var(--sun-ink)" stroke-width="1.6" stroke-linecap="round"/><circle cx="164" cy="31" r="8.5" style="fill:var(--earth);stroke:var(--earth-ink)" stroke-opacity=".5" stroke-width="1.2"/><path d="M160 31.2 l2.8 2.8 5.2 -5.4" fill="none" style="stroke:var(--earth-ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M88 104 h26 v-8 h26 v-8 h26 v-8" fill="none" stroke="#22302a" stroke-opacity=".28" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M170 76 l-4 4 M170 76 l4 4" style="stroke:#22302a" stroke-opacity=".28" stroke-width="1.6" stroke-linecap="round"/></svg></div>'
+     +   '<span class="num">03</span><h3>More ways to level up</h3>'
+     +   '<p>Water intake would not have to be the only way to earn progress. Users could receive bonus growth points for adding electrolytes, reaching hydration goals, or completing other healthy hydration habits, creating more ways to grow their plants and progress through the garden.</p></article>'
+     + '<article class="hb-idea reveal d4" style="--tint:var(--sky)">'
+     +   '<div class="hb-idea-art" aria-hidden="true"><svg viewBox="0 0 200 120" role="presentation"><rect x="30" y="16" width="14" height="8" rx="2" style="fill:var(--sky-ink)" opacity=".55"/><path d="M28 30 q0 -6 9 -6 q9 0 9 6 v70 q0 7 -7 7 h-4 q-7 0 -7 -7z" style="fill:#fff;stroke:var(--sky-ink)" stroke-opacity=".5" stroke-width="1.4"/><path d="M29.5 58 h15 v42 q0 5.5 -5.5 5.5 h-4 q-5.5 0 -5.5 -5.5z" style="fill:var(--sky)"/><rect x="66" y="26" width="18" height="7" rx="2" style="fill:var(--earth-ink)" opacity=".55"/><path d="M62 40 q0 -7 8 -7 h10 q8 0 8 7 v60 q0 7 -7 7 h-12 q-7 0 -7 -7z" style="fill:#fff;stroke:var(--earth-ink)" stroke-opacity=".5" stroke-width="1.4"/><path d="M63.5 70 h23 v30 q0 5.5 -5.5 5.5 h-12 q-5.5 0 -5.5 -5.5z" style="fill:var(--earth)"/><g stroke-linecap="round"><line x1="108" y1="36" x2="130" y2="36" stroke="#22302a" stroke-opacity=".3" stroke-width="3"/><line x1="108" y1="60" x2="124" y2="60" stroke="#22302a" stroke-opacity=".3" stroke-width="3"/><line x1="108" y1="84" x2="128" y2="84" stroke="#22302a" stroke-opacity=".3" stroke-width="3"/></g><g><circle cx="142" cy="36" r="4" style="fill:var(--sky)"/><circle cx="154" cy="36" r="4" style="fill:var(--sky)"/><circle cx="166" cy="36" r="4" style="fill:var(--sky)"/><circle cx="178" cy="36" r="4" style="fill:#fff;stroke:var(--sky-ink)" stroke-opacity=".35"/><circle cx="142" cy="60" r="4" style="fill:var(--sun)"/><circle cx="154" cy="60" r="4" style="fill:var(--sun)"/><circle cx="166" cy="60" r="4" style="fill:#fff;stroke:var(--sun-ink)" stroke-opacity=".35"/><circle cx="178" cy="60" r="4" style="fill:#fff;stroke:var(--sun-ink)" stroke-opacity=".35"/><circle cx="142" cy="84" r="4" style="fill:var(--earth)"/><circle cx="154" cy="84" r="4" style="fill:var(--earth)"/><circle cx="166" cy="84" r="4" style="fill:var(--earth)"/><circle cx="178" cy="84" r="4" style="fill:var(--earth)"/></g><line x1="104" y1="104" x2="184" y2="104" stroke="#22302a" stroke-opacity=".14" stroke-width="1.2" stroke-linecap="round"/></svg></div>'
+     +   '<span class="num">04</span><h3>A hydration guide</h3>'
+     +   '<p>I would also explore a resource where users could compare water bottles, electrolyte brands, and other hydration products based on factors such as quality, price, features, and budget. This would expand HydraBloom beyond tracking and help users make more informed hydration choices.</p></article>'
+     + '</div></div></section>';
 
   h += '<footer class="hb-foot">'
      + '<p class="thanks reveal">Thanks for reading.</p>'
@@ -3625,10 +4538,10 @@ function wireHydra(root){
   if (!REDUCE){
     root.querySelectorAll("[data-tilt]").forEach(function(el){ hbTilt(el, 13); });
 
-    /* the introducing card tilts and catches the light */
+    /* the introducing banner catches the light under the pointer. It no
+       longer tilts: a full-bleed band would pull away from the page edges */
     const card = root.querySelector("[data-hb-introcard]");
     if (card){
-      hbTilt(card, 5);
       card.addEventListener("pointermove", function(e){
         const r = card.getBoundingClientRect();
         card.style.setProperty("--mx", ((e.clientX - r.left) / r.width * 100).toFixed(1) + "%");
@@ -3660,20 +4573,74 @@ function wireHydra(root){
     });
   });
 
+  /* a linear, non-looping carousel: the active screen sits centred and in
+     front, its immediate neighbours peek from behind it, and everything
+     further away is hidden until the user steps toward it */
   root.querySelectorAll("[data-hb-walk]").forEach(function(walk){
     const w = HB_WALKS[+walk.dataset.hbWalk];
-    const scr = walk.querySelector(".hb-phone .scr");
-    const btns = walk.querySelectorAll("[data-hb-step]");
-    btns.forEach(function(b){
-      b.addEventListener("click", function(){
-        btns.forEach(function(o){ o.setAttribute("aria-selected", String(o === b)); });
-        const st = w.steps[+b.dataset.hbStep];
-        scr.innerHTML = hbScreenInner(st[2], st[0]);
-        scr.classList.remove("scr-swap");
-        void scr.offsetWidth;
-        scr.classList.add("scr-swap");
+    const slots = Array.prototype.slice.call(walk.querySelectorAll("[data-hb-car-slot]"));
+    const dots = Array.prototype.slice.call(walk.querySelectorAll("[data-hb-car-dot]"));
+    const prevBtn = walk.querySelector('[data-hb-car="prev"]');
+    const nextBtn = walk.querySelector('[data-hb-car="next"]');
+    const nEl = walk.querySelector("[data-hb-car-n]");
+    const titleEl = walk.querySelector("[data-hb-car-title]");
+    const descEl = walk.querySelector("[data-hb-car-desc]");
+    let active = 0;
+
+    const n = w.steps.length;
+    function render(){
+      /* the side previews wrap purely for visual balance (Screen 1's "prev"
+         slot shows the last screen, Screen N's "next" slot shows the
+         first) — but a wrapped preview is decorative only: it never
+         becomes clickable, and the arrows never wrap the real sequence. */
+      const prevIdx = (active - 1 + n) % n;
+      const nextIdx = (active + 1) % n;
+      const prevWrapped = active === 0;
+      const nextWrapped = active === n - 1;
+      slots.forEach(function(slot, i){
+        slot.classList.remove("is-active","is-prev","is-next","is-far-left","is-far-right","is-decorative");
+        if (i === active){
+          slot.classList.add("is-active"); slot.tabIndex = -1;
+        } else if (n > 1 && i === prevIdx){
+          slot.classList.add("is-prev");
+          slot.tabIndex = prevWrapped ? -1 : 0;
+          if (prevWrapped) slot.classList.add("is-decorative");
+        } else if (n > 1 && i === nextIdx){
+          slot.classList.add("is-next");
+          slot.tabIndex = nextWrapped ? -1 : 0;
+          if (nextWrapped) slot.classList.add("is-decorative");
+        } else {
+          const fwd = (i - active + n) % n, back = (active - i + n) % n;
+          slot.classList.add(fwd <= back ? "is-far-right" : "is-far-left");
+          slot.tabIndex = -1;
+        }
+      });
+      dots.forEach(function(d, i){ d.setAttribute("aria-current", String(i === active)); });
+      if (prevBtn) prevBtn.disabled = active === 0;
+      if (nextBtn) nextBtn.disabled = active === n - 1;
+      const st = w.steps[active];
+      nEl.textContent = "0" + (active + 1);
+      titleEl.textContent = st[0];
+      descEl.textContent = st[1];
+    }
+    function goTo(i){
+      active = Math.max(0, Math.min(n - 1, i));
+      render();
+    }
+    slots.forEach(function(slot, i){
+      slot.addEventListener("click", function(){
+        if (slot.classList.contains("is-decorative")) return;
+        goTo(i);
+      });
+      slot.addEventListener("keydown", function(e){
+        if (slot.classList.contains("is-decorative")) return;
+        if (e.key === "Enter" || e.key === " "){ e.preventDefault(); goTo(i); }
       });
     });
+    dots.forEach(function(d, i){ d.addEventListener("click", function(){ goTo(i); }); });
+    if (prevBtn) prevBtn.addEventListener("click", function(){ goTo(active - 1); });
+    if (nextBtn) nextBtn.addEventListener("click", function(){ goTo(active + 1); });
+    render();
   });
 
   const pop = root.querySelector("#hb-pop");
@@ -3691,25 +4658,43 @@ function wireHydra(root){
     });
   });
 
-  const glass = root.querySelector("[data-hb-glass]");
-  if (glass && !REDUCE){
-    glass.addEventListener("pointermove", function(e){
-      const r = glass.getBoundingClientRect();
-      glass.style.setProperty("--mx", ((e.clientX - r.left) / r.width * 100).toFixed(1) + "%");
-      glass.style.setProperty("--my", ((e.clientY - r.top) / r.height * 100).toFixed(1) + "%");
-    });
-  }
+  fitHydraHeadlines();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitHydraHeadlines);
+}
 
-  root.querySelectorAll("[data-hb-q]").forEach(function(b){
-    const panel = root.querySelector("#hb-a-" + b.dataset.hbQ);
-    b.setAttribute("aria-controls", panel.id);
-    b.addEventListener("click", function(){
-      const open = b.getAttribute("aria-expanded") === "true";
-      b.setAttribute("aria-expanded", open ? "false" : "true");
-      panel.style.maxHeight = open ? "0px" : panel.scrollHeight + "px";
-    });
+/* Major hb-xl headlines are set editorially large, which otherwise forces
+   dramatic wraps even when a line would comfortably fit. On desktop, scale
+   each headline down just enough to sit on one line; below 900px (where
+   sections already restack) the CSS clamp/max-width take back over and
+   headlines wrap the way the layout expects. */
+function fitHydraHeadlines(){
+  if (!isOverlayOpen()) return;
+  const root = overlay.querySelector(".cs-hydra");
+  if (!root) return;
+  const desktop = window.innerWidth >= 900;
+  overlay.querySelectorAll(".hb-xl:not([data-hb-nofit])").forEach(function(el){
+    if (!desktop){ el.style.whiteSpace = ""; el.style.fontSize = ""; return; }
+    el.style.whiteSpace = "nowrap";
+    el.style.fontSize = "";
+    const parent = el.parentElement;
+    if (!parent) return;
+    const avail = parent.clientWidth;
+    let size = parseFloat(getComputedStyle(el).fontSize);
+    const floor = Math.max(size * 0.3, 20);
+    let guard = 0;
+    while (el.scrollWidth > avail && size > floor && guard < 90){
+      size -= 1;
+      el.style.fontSize = size + "px";
+      guard++;
+    }
+    if (el.scrollWidth > avail) el.style.whiteSpace = "";
   });
 }
+let hbHeadlineRt;
+window.addEventListener("resize", function(){
+  clearTimeout(hbHeadlineRt);
+  hbHeadlineRt = setTimeout(fitHydraHeadlines, 120);
+});
 
 /* Lantern is still being written up, so its page says so plainly and gives
    the short version rather than an empty scaffold of headings. */
