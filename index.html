@@ -677,12 +677,12 @@ a.nav-link{text-decoration:none; cursor:pointer}
 
 /* Lantern: the same built-in nook. Its scene is a gradient rather than a
    picture, so the dim-at-rest / lit-from-within lighting sits on the scene
-   itself, with the same bloom inside the arch (the travel copy uses it too) */
+   itself, with the same bloom inside the arch */
 .nook[data-project="lantern"] .sc-ember{
   filter:brightness(.88) saturate(.92);
   transition:filter .9s var(--ease);
 }
-.nook[data-project="lantern"] .sc-ember::after, .nook-travel .sc-ember::after{
+.nook[data-project="lantern"] .sc-ember::after{
   content:""; position:absolute; inset:0; pointer-events:none;
   background:radial-gradient(ellipse 85% 62% at 50% 34%,
     rgba(255,222,160,.42), rgba(255,196,120,.14) 52%, rgba(255,190,110,0) 78%);
@@ -1031,13 +1031,6 @@ a.nav-link{text-decoration:none; cursor:pointer}
 }
 /* px-based inner shadows would not scale with the copy; the gradient does */
 .nook-travel .sc-art::after{box-shadow:none}
-/* a gradient scene copied at full size, lit like the hovered nook. Its
-   light pools are already radial gradients that fade to nothing, so the copy
-   drops their blur: scaled up to full screen it cost a dropped frame, and at
-   nook size the difference is invisible */
-.nook-travel .sc-ember{filter:brightness(1.08) saturate(1.14)}
-.nook-travel .sc-ember::after{opacity:1; transition:none}
-.nook-travel .sc-ember span{filter:none}
 /* the handoff: pure white over absolutely everything — shelf, the garden's
    edges, the case study and its scrollbar. The page is switched while this
    is fully opaque, then the veil lifts to reveal it. */
@@ -3652,10 +3645,11 @@ function zoomSteps(g){
   return steps;
 }
 
-/* a copy of the nook's scene, laid out at its FINAL full-screen size (so it
+/* a copy of the nook's picture, laid out at its FINAL full-screen size (so it
    is rasterised once, sharp) and shrunk by transform to sit on the arch.
-   A picture is rebuilt from ART; a CSS scene is cloned from the live nook
-   with its animations frozen at the same moment, so frame one matches. */
+   Every nook travels as a picture. One drawn in CSS (Lantern) is first
+   painted to a still of the live nook at this moment, then goes through
+   exactly the same picture path as one from ART. */
 function travelLayer(id, btn, g, atArch){
   const travel = dreamLayer("nook-travel");
   travel.style.cssText = "left:" + (g.vw - g.W) / 2 + "px;top:" + (g.vh - g.H) / 2 + "px;"
@@ -3663,27 +3657,129 @@ function travelLayer(id, btn, g, atArch){
     + "border-radius:" + g.r0 * g.S + "px " + g.r0 * g.S + "px 0 0;opacity:0;"
     + "transform:" + (atArch ? "translate3d(" + g.dx + "px," + g.dy + "px,0) scale(" + (1 / g.S) + ")" : "none");
   const art = ART[id] || {};
-  let freeze = function(){};
-  if (art.nook){
-    travel.innerHTML = artMarkup(art.nook, art.pos, art.crop);
-  } else {
-    const live = btn.querySelector(".nook-arch .scene");
-    const copy = live.cloneNode(true);
-    travel.appendChild(copy);
-    /* only the scene's own looping animations are paired up; a hover
-       transition running on the live nook has no twin in the copy */
-    const loops = function(el){
-      return el.getAnimations({subtree:true}).filter(function(an){ return an instanceof CSSAnimation; });
-    };
-    freeze = function(){
-      const from = loops(live);
-      loops(copy).forEach(function(an, i){
-        if (from[i]) an.currentTime = from[i].currentTime;
-        an.pause();
-      });
-    };
+  let src = art.nook, crop = art.crop;
+  if (!src){
+    const still = sceneStill(btn.querySelector(".nook-arch .scene"));
+    src = still.src;
+    crop = [0, 0, still.w, still.h, still.w, still.h];
   }
-  return {el:travel, freeze:freeze};
+  travel.innerHTML = artMarkup(src, art.pos, crop);
+  return travel;
+}
+
+/* paints a CSS scene (a gradient ground plus its soft light pools, as they
+   are on screen right now) into a still image, so it can travel the way a
+   picture does. Drawn at the nook's own size: the scene is all soft
+   gradients, so it scales up to full screen without losing anything. */
+function sceneStill(scene){
+  const w = scene.offsetWidth, h = scene.offsetHeight;
+  const k = Math.max(2, window.devicePixelRatio || 1);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(w * k);
+  canvas.height = Math.round(h * k);
+  const ctx = canvas.getContext("2d");
+  ctx.scale(k, k);
+
+  /* the ground: one tall gradient tile, slid to where its animation is */
+  const cs = getComputedStyle(scene);
+  const tileH = h * (parseFloat(cs.backgroundSize.split(" ")[1]) / 100 || 1);
+  const posY = (parseFloat(cs.backgroundPositionY) || 0) / 100;
+  ctx.fillStyle = cssGradient(ctx, cs.backgroundImage, 0, (h - tileH) * posY, w, tileH);
+  ctx.fillRect(0, 0, w, h);
+
+  /* the light pools, each with its current drift, its oval and its blur */
+  const canFilter = "filter" in ctx;
+  scene.querySelectorAll("span").forEach(function(s){
+    const ss = getComputedStyle(s);
+    if (!ss.backgroundImage.includes("gradient")) return;
+    const sw = s.offsetWidth, sh = s.offsetHeight;
+    const blur = /blur\(([\d.]+)px\)/.exec(ss.filter);
+    const oval = ss.borderTopLeftRadius === "50%";
+    const draw = function(c){
+      c.save();
+      c.translate(s.offsetLeft + sw / 2, s.offsetTop + sh / 2);
+      const m = /matrix\(([^)]+)\)/.exec(ss.transform);
+      if (m){
+        const v = m[1].split(",").map(parseFloat);
+        c.transform(v[0], v[1], v[2], v[3], v[4], v[5]);
+      }
+      c.translate(-sw / 2, -sh / 2);
+      c.fillStyle = cssGradient(c, ss.backgroundImage, 0, 0, sw, sh);
+      c.beginPath();
+      if (oval) c.ellipse(sw / 2, sh / 2, sw / 2, sh / 2, 0, 0, Math.PI * 2);
+      else c.rect(0, 0, sw, sh);
+      c.fill();
+      c.restore();
+    };
+    if (!blur){ draw(ctx); return; }
+    if (canFilter){
+      ctx.filter = "blur(" + parseFloat(blur[1]) * k + "px)";
+      draw(ctx);
+      ctx.filter = "none";
+      return;
+    }
+    /* no canvas filters (older Safari): draw small and let the scale-up soften it */
+    const f = Math.max(1, parseFloat(blur[1]) / 3);
+    const small = document.createElement("canvas");
+    small.width = Math.max(1, Math.round(w / f));
+    small.height = Math.max(1, Math.round(h / f));
+    const sc = small.getContext("2d");
+    sc.scale(1 / f, 1 / f);
+    draw(sc);
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(small, 0, 0, canvas.width, canvas.height);
+    ctx.restore();
+  });
+  return {src:canvas.toDataURL("image/png"), w:canvas.width, h:canvas.height};
+}
+
+/* a canvas gradient from a computed CSS linear- or radial-gradient laid
+   over the box x, y, w, h */
+function cssGradient(ctx, css, x, y, w, h){
+  const body = css.slice(css.indexOf("(") + 1, css.lastIndexOf(")"));
+  const parts = [];
+  let depth = 0, from = 0;
+  for (let i = 0; i < body.length; i++){
+    if (body[i] === "(") depth++;
+    else if (body[i] === ")") depth--;
+    else if (body[i] === "," && !depth){ parts.push(body.slice(from, i).trim()); from = i + 1; }
+  }
+  parts.push(body.slice(from).trim());
+  const radial = css.indexOf("radial") === 0;
+  const head = /^(rgb|#|[a-z]+\()/.test(parts[0]) ? null : parts.shift();
+
+  const cx = x + w / 2, cy = y + h / 2;
+  let grad;
+  if (radial){
+    /* the scenes' light pools: a centred circle reaching the farthest corner */
+    grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.hypot(w, h) / 2);
+  } else {
+    const a = (head && /deg/.test(head) ? parseFloat(head) : 180) * Math.PI / 180;
+    const dx = Math.sin(a), dy = -Math.cos(a);
+    const half = (Math.abs(w * dx) + Math.abs(h * dy)) / 2;
+    grad = ctx.createLinearGradient(cx - dx * half, cy - dy * half, cx + dx * half, cy + dy * half);
+  }
+
+  /* colour stops, with unpositioned ones spread evenly as CSS does */
+  const stops = parts.map(function(p){
+    const end = p.lastIndexOf(")");
+    const color = end > 0 ? p.slice(0, end + 1) : p.split(" ")[0];
+    const at = parseFloat(p.slice(end + 1));
+    return [color, isNaN(at) ? null : at / 100];
+  });
+  if (stops[0][1] === null) stops[0][1] = 0;
+  if (stops[stops.length - 1][1] === null) stops[stops.length - 1][1] = 1;
+  for (let i = 1; i < stops.length; i++){
+    if (stops[i][1] !== null) continue;
+    let j = i;
+    while (stops[j][1] === null) j++;
+    const a0 = stops[i - 1][1], a1 = stops[j][1];
+    for (let n = i; n < j; n++) stops[n][1] = a0 + (a1 - a0) * (n - i + 1) / (j - i + 1);
+  }
+  stops.forEach(function(s){ grad.addColorStop(Math.min(1, Math.max(0, s[1])), s[0]); });
+  return grad;
 }
 
 /* a full-screen layer for the transition; while up it swallows wheel and
@@ -3750,15 +3846,13 @@ function enterNook(id, btn){
   }
 
   const g = nookGeometry(btn);
-  const t = travelLayer(id, btn, g, true);
-  const travel = t.el;
+  const travel = travelLayer(id, btn, g, true);
   const wash = dreamLayer("nook-wash" + (cfg.tone === "dark" ? " dark" : ""));
   const veil = dreamLayer("nook-veil");
   veil.style.background = DREAM_TONE[cfg.tone];
   document.body.appendChild(travel);
   document.body.appendChild(wash);
   document.body.appendChild(veil);
-  t.freeze();
 
   const start = function(){
     /* the copy appears at full opacity exactly over the arch, then zooms */
